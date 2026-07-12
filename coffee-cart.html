@@ -1,0 +1,1641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Steep &amp; Sell — Coffee Cart Sim</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg: #17100b;
+  --bg-panel: #241a12;
+  --bg-panel-2: #2c2016;
+  --line: #4a3a29;
+  --cream: #f1e4cf;
+  --cream-dim: #cbb99e;
+  --copper: #c97d3f;
+  --copper-light: #e3a868;
+  --gold: #e8b94a;
+  --sage: #8fa888;
+  --sage-light: #b3caa9;
+  --red: #d1594a;
+  --red-light: #e8887c;
+  --font-display: 'Kalam', cursive;
+  --font-body: 'DM Sans', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:
+    radial-gradient(ellipse at 20% -10%, rgba(201,125,63,0.12), transparent 45%),
+    radial-gradient(ellipse at 90% 10%, rgba(232,185,74,0.07), transparent 40%),
+    var(--bg);
+  color:var(--cream);
+  font-family:var(--font-body);
+  min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+}
+::selection{background:var(--copper); color:var(--bg);}
+button{font-family:var(--font-body); cursor:pointer;}
+button:focus-visible, input:focus-visible, [tabindex]:focus-visible{
+  outline:2px solid var(--gold); outline-offset:2px;
+}
+.hidden{display:none !important;}
+
+/* ---------- Header ---------- */
+.topbar{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:14px 22px;
+  background:linear-gradient(180deg, var(--bg-panel), var(--bg));
+  border-bottom:1px solid var(--line);
+  flex-wrap:wrap; gap:10px;
+  position:sticky; top:0; z-index:20;
+}
+.brand{display:flex; align-items:center; gap:10px;}
+.brand-mark{position:relative; width:34px; height:34px;}
+.brand-mark svg{width:100%; height:100%;}
+.steam{position:absolute; left:50%; top:-14px; transform:translateX(-50%); width:20px; height:16px; pointer-events:none; opacity:0.85;}
+.steam span{
+  position:absolute; bottom:0; width:3px; height:10px; border-radius:3px;
+  background:linear-gradient(180deg, transparent, var(--cream-dim));
+  animation:steamRise 2.6s ease-in infinite;
+  opacity:0;
+}
+.steam span:nth-child(1){left:2px; animation-delay:0s;}
+.steam span:nth-child(2){left:9px; animation-delay:0.7s;}
+.steam span:nth-child(3){left:16px; animation-delay:1.4s;}
+@keyframes steamRise{
+  0%{opacity:0; transform:translateY(0) translateX(0) scaleX(1);}
+  20%{opacity:0.7;}
+  100%{opacity:0; transform:translateY(-22px) translateX(4px) scaleX(1.6);}
+}
+.brand-text{font-family:var(--font-display); font-size:22px; line-height:1; color:var(--cream);}
+.brand-text small{display:block; font-family:var(--font-body); font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--cream-dim); margin-top:2px;}
+
+.stat-strip{display:flex; gap:18px; flex-wrap:wrap; align-items:center;}
+.stat{display:flex; flex-direction:column; align-items:flex-end; min-width:60px;}
+.stat .label{font-size:9px; letter-spacing:.12em; text-transform:uppercase; color:var(--cream-dim);}
+.stat .value{font-family:var(--font-mono); font-size:16px; font-weight:600; color:var(--gold);}
+.stat.cash .value{color:var(--gold);}
+.stat.day .value{color:var(--cream);}
+.loyalty-wrap{display:flex; flex-direction:column; align-items:flex-end; gap:3px;}
+.loyalty-bar{width:90px; height:7px; background:var(--bg); border:1px solid var(--line); border-radius:5px; overflow:hidden;}
+.loyalty-fill{height:100%; background:linear-gradient(90deg, var(--sage), var(--sage-light)); width:0%; transition:width .5s ease;}
+.weather-chip{display:flex; align-items:center; gap:8px; background:var(--bg-panel-2); border:1px solid var(--line); border-radius:10px; padding:6px 12px;}
+.weather-chip .icon{font-size:20px;}
+.weather-chip .wtext{display:flex; flex-direction:column; line-height:1.15;}
+.weather-chip .wtext .wname{font-size:12px; color:var(--cream);}
+.weather-chip .wtext .wtemp{font-family:var(--font-mono); font-size:13px; color:var(--copper-light);}
+
+/* ---------- Layout ---------- */
+.wrap{max-width:1180px; margin:0 auto; padding:20px;}
+.screen{animation:fadeIn .35s ease;}
+@keyframes fadeIn{from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);}}
+
+/* ---------- Setup screen ---------- */
+.setup{
+  min-height:calc(100vh - 70px);
+  display:flex; align-items:center; justify-content:center;
+  padding:20px;
+}
+.setup-card{
+  max-width:640px; width:100%;
+  background:var(--bg-panel);
+  border:1px solid var(--line);
+  border-radius:18px;
+  padding:38px 34px;
+  box-shadow:0 30px 60px -20px rgba(0,0,0,.6);
+}
+.setup-title{font-family:var(--font-display); font-size:42px; margin:0 0 4px; color:var(--cream);}
+.setup-sub{color:var(--cream-dim); margin:0 0 26px; font-size:14.5px; line-height:1.5;}
+.field-group{margin-bottom:22px;}
+.field-label{font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--copper-light); margin-bottom:9px; display:block;}
+.choice-row{display:flex; gap:10px; flex-wrap:wrap;}
+.choice-btn{
+  flex:1; min-width:140px;
+  background:var(--bg-panel-2); border:1px solid var(--line); color:var(--cream);
+  border-radius:12px; padding:14px 16px; text-align:left; transition:.15s;
+}
+.choice-btn .cb-title{font-weight:700; font-size:15px;}
+.choice-btn .cb-sub{font-size:12px; color:var(--cream-dim); margin-top:3px;}
+.choice-btn:hover{border-color:var(--copper);}
+.choice-btn.selected{border-color:var(--copper); background:linear-gradient(180deg, rgba(201,125,63,.18), rgba(201,125,63,.06));}
+.budget-note{
+  background:var(--bg-panel-2); border:1px solid var(--line); border-radius:10px; padding:12px 14px;
+  font-size:12.5px; color:var(--cream-dim); margin-top:12px; border-left:3px solid var(--gold);
+}
+.budget-note b{color:var(--gold); font-family:var(--font-mono);}
+.text-input{
+  width:100%; background:var(--bg-panel-2); border:1px solid var(--line); color:var(--cream);
+  border-radius:10px; padding:12px 14px; font-family:var(--font-body); font-size:14px;
+}
+.primary-btn{
+  width:100%; padding:15px; border-radius:12px; border:none;
+  background:linear-gradient(180deg, var(--copper-light), var(--copper));
+  color:#241205; font-weight:700; font-size:15px; letter-spacing:.02em;
+  box-shadow:0 8px 20px -8px rgba(201,125,63,.6);
+  transition:.15s;
+}
+.primary-btn:hover{filter:brightness(1.06); transform:translateY(-1px);}
+.primary-btn:disabled{opacity:.4; cursor:not-allowed; transform:none;}
+.secondary-btn{
+  padding:12px 18px; border-radius:10px; border:1px solid var(--line);
+  background:var(--bg-panel-2); color:var(--cream); font-size:13.5px; font-weight:500;
+}
+.secondary-btn:hover{border-color:var(--copper-light);}
+.secondary-btn:disabled{opacity:.4; cursor:not-allowed;}
+
+/* ---------- Prep grid ---------- */
+.prep-grid{display:grid; grid-template-columns:1.05fr 1fr 1fr; gap:16px;}
+@media(max-width:960px){.prep-grid{grid-template-columns:1fr;}}
+.panel{
+  background:var(--bg-panel); border:1px solid var(--line); border-radius:16px; padding:20px;
+}
+.panel-title{
+  font-family:var(--font-display); font-size:20px; margin:0 0 4px; color:var(--copper-light);
+  display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+}
+.panel-sub{font-size:12px; color:var(--cream-dim); margin:0 0 16px;}
+.weekend-badge{
+  display:inline-block; background:var(--gold); color:#241205; font-weight:700; font-size:10px;
+  padding:3px 8px; border-radius:6px; letter-spacing:.03em; font-family:var(--font-body);
+}
+.segment-hint{
+  font-size:12px; color:var(--copper-light); background:var(--bg-panel-2); border-radius:8px; padding:8px 10px;
+  margin-top:8px; border-left:3px solid var(--copper-light); font-style:italic;
+}
+
+/* recipe sliders */
+.slider-row{margin-bottom:18px;}
+.slider-row:last-child{margin-bottom:0;}
+.slider-top{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px;}
+.slider-top .sname{font-size:13.5px; font-weight:700;}
+.slider-top .sdesc{font-size:11px; color:var(--cream-dim); font-family:var(--font-mono);}
+input[type=range]{
+  -webkit-appearance:none; width:100%; height:6px; border-radius:4px;
+  background:linear-gradient(90deg, var(--copper) var(--fill,50%), var(--line) var(--fill,50%));
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none; width:18px; height:18px; border-radius:50%;
+  background:var(--cream); border:3px solid var(--copper); cursor:pointer; margin-top:0px;
+}
+input[type=range]::-moz-range-thumb{
+  width:18px; height:18px; border-radius:50%; background:var(--cream); border:3px solid var(--copper); cursor:pointer;
+}
+.recipe-note{
+  margin-top:14px; padding:10px 12px; background:var(--bg-panel-2); border-radius:10px;
+  font-size:12px; color:var(--cream-dim); border-left:3px solid var(--copper);
+}
+.cost-line{display:flex; justify-content:space-between; font-family:var(--font-mono); font-size:12.5px; margin-top:12px; color:var(--cream-dim);}
+.cost-line b{color:var(--gold); font-weight:600;}
+.cost-caveat{font-size:10.5px; color:var(--cream-dim); margin-top:4px; font-style:italic; line-height:1.4;}
+
+/* price panel */
+.price-display{font-family:var(--font-mono); font-size:38px; color:var(--gold); text-align:center; margin:6px 0 14px;}
+.price-display.small{font-size:26px; margin:4px 0 10px;}
+.margin-tag{text-align:center; font-size:12px; color:var(--sage-light); margin-bottom:10px; font-family:var(--font-mono);}
+
+/* stock table */
+.stock-list{display:flex; flex-direction:column; gap:10px;}
+.stock-item{display:grid; grid-template-columns:26px 1fr auto; gap:10px; align-items:center;}
+.stock-icon{font-size:18px; text-align:center;}
+.stock-name{font-size:12.5px; font-weight:600;}
+.stock-bar-track{height:6px; background:var(--bg); border:1px solid var(--line); border-radius:4px; overflow:hidden; margin-top:4px;}
+.stock-bar-fill{height:100%; background:linear-gradient(90deg, var(--sage), var(--sage-light));}
+.stock-bar-fill.low{background:linear-gradient(90deg, var(--red), var(--red-light));}
+.stock-qty{font-family:var(--font-mono); font-size:11.5px; color:var(--cream-dim); text-align:right; white-space:nowrap;}
+.buy-row{display:grid; grid-template-columns:22px 1fr 78px 148px; gap:8px; align-items:center; margin-bottom:9px;}
+.buy-row .bicon{font-size:16px; text-align:center;}
+.buy-row .bname{font-size:12px;}
+.buy-row .bprice{font-family:var(--font-mono); font-size:10.5px; color:var(--cream-dim); display:flex; align-items:center; gap:3px;}
+.rate-arrow{font-size:11px; font-weight:700;}
+.rate-arrow.up{color:var(--red-light);}
+.rate-arrow.down{color:var(--sage-light);}
+.stepper{display:flex; align-items:center; gap:4px;}
+.stepper button{
+  width:24px; height:30px; flex-shrink:0; border-radius:6px; border:1px solid var(--line);
+  background:var(--bg-panel-2); color:var(--cream); font-size:15px; line-height:1;
+  display:flex; align-items:center; justify-content:center; padding:0; transition:.12s;
+  font-family:var(--font-body);
+}
+.stepper button:hover{border-color:var(--copper-light); color:var(--copper-light);}
+.stepper button:active{background:var(--copper); color:#241205; border-color:var(--copper);}
+.buy-row input[type=number]{
+  flex:1 1 auto; width:0; min-width:56px; background:var(--bg-panel-2); border:1px solid var(--line); color:var(--cream);
+  border-radius:7px; padding:6px 4px; font-family:var(--font-mono); font-size:13px; text-align:center;
+}
+.buy-row input[type=number]::-webkit-outer-spin-button,
+.buy-row input[type=number]::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0; }
+.buy-row input[type=number]{ -moz-appearance:textfield; appearance:textfield; }
+.market-note{font-size:11px; color:var(--cream-dim); margin-bottom:10px; font-style:italic;}
+
+.buy-summary{margin-top:12px; padding-top:12px; border-top:1px dashed var(--line);}
+.buy-summary-row{display:flex; justify-content:space-between; align-items:baseline; font-family:var(--font-mono); font-size:12.5px; margin-bottom:6px;}
+.buy-summary-row .bl{font-size:10px; text-transform:uppercase; letter-spacing:.07em; color:var(--cream-dim); font-family:var(--font-body);}
+.buy-summary-row b{color:var(--cream); font-size:14px;}
+.buy-remaining{
+  display:flex; justify-content:space-between; align-items:center; background:var(--bg-panel-2);
+  border:1px solid var(--line); border-radius:10px; padding:10px 12px; margin-top:4px;
+}
+.buy-remaining .bl{font-size:10.5px; text-transform:uppercase; letter-spacing:.07em; color:var(--cream-dim);}
+.buy-remaining .brv{font-family:var(--font-mono); font-size:18px; font-weight:700; color:var(--sage-light);}
+.buy-remaining .brv.neg{color:var(--red-light);}
+
+/* unlock banner */
+.unlock-banner{
+  grid-column:1 / -1; display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap;
+  background:linear-gradient(90deg, rgba(232,185,74,.14), rgba(201,125,63,.08));
+  border:1px solid var(--gold); border-radius:14px; padding:16px 20px; margin-bottom:16px;
+}
+.unlock-banner .ub-text{flex:1; min-width:220px;}
+.unlock-banner .ub-title{font-family:var(--font-display); font-size:19px; color:var(--gold); margin:0 0 3px;}
+.unlock-banner .ub-sub{font-size:12.5px; color:var(--cream-dim); margin:0;}
+.unlock-banner button{white-space:nowrap; padding:12px 20px;}
+.brew2-panel{border-color:var(--gold);}
+.brew2-tag{font-size:10px; background:var(--gold); color:#241205; padding:2px 7px; border-radius:5px; font-family:var(--font-body); font-weight:700;}
+
+/* ---------- Service screen ---------- */
+.service-top{display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap; margin-bottom:14px;}
+.cup-gauge{position:relative; width:64px; height:78px; flex-shrink:0;}
+.cup-gauge svg{width:100%; height:100%; display:block;}
+.gauge-label{position:absolute; bottom:-18px; left:0; right:0; text-align:center; font-family:var(--font-mono); font-size:10px; color:var(--cream-dim);}
+
+.scene-panel{padding:14px;}
+canvas#sceneCanvas{
+  width:100%; height:auto; display:block; border-radius:10px; border:1px solid var(--line);
+  image-rendering:pixelated; image-rendering:crisp-edges;
+  background:#0f0a07;
+}
+
+.trio-stats{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:14px;}
+.trio-stat{
+  background:var(--bg-panel-2); border:1px solid var(--line); border-radius:10px; padding:10px 8px; text-align:center;
+}
+.trio-stat .ti{font-size:20px;}
+.trio-stat .tv{font-family:var(--font-mono); font-weight:700; font-size:18px; margin-top:2px;}
+.trio-stat.bought .tv{color:var(--sage-light);}
+.trio-stat.declined .tv{color:var(--copper-light);}
+.trio-stat.nostock .tv{color:var(--red-light);}
+.trio-stat .tl{font-size:10px; text-transform:uppercase; letter-spacing:.06em; color:var(--cream-dim); margin-top:2px;}
+
+.service-grid{display:grid; grid-template-columns:1fr 260px; gap:16px; margin-top:16px;}
+@media(max-width:900px){.service-grid{grid-template-columns:1fr;}}
+.live-price-row{display:flex; align-items:center; gap:14px;}
+.live-price-row .price-display{margin:0; font-size:28px; flex-shrink:0; min-width:100px;}
+.live-price-block{margin-bottom:16px; padding-bottom:14px; border-bottom:1px dashed var(--line);}
+.live-price-block:last-of-type{border-bottom:none; padding-bottom:0; margin-bottom:0;}
+.live-price-block .lp-label{font-size:11px; text-transform:uppercase; letter-spacing:.07em; color:var(--cream-dim); margin-bottom:6px;}
+.mini-log{
+  margin-top:12px; max-height:150px; overflow-y:auto; display:flex; flex-direction:column-reverse; gap:5px;
+  font-size:11.5px; font-family:var(--font-mono); color:var(--cream-dim); padding-right:4px;
+}
+.mini-log div{border-left:2px solid var(--line); padding-left:8px;}
+.mini-log div.good{border-color:var(--sage);}
+.mini-log div.bad{border-color:var(--red);}
+.service-stats{display:flex; flex-direction:column; gap:10px;}
+.mini-stat{background:var(--bg-panel-2); border:1px solid var(--line); border-radius:10px; padding:9px 13px; display:flex; justify-content:space-between; align-items:center;}
+.mini-stat .msl{font-size:11.5px; color:var(--cream-dim);}
+.mini-stat .msv{font-family:var(--font-mono); font-weight:600; color:var(--cream); font-size:13.5px;}
+.toast-cash{
+  position:fixed; pointer-events:none; font-family:var(--font-mono); font-weight:700; color:var(--gold);
+  animation:floatUp 1s ease forwards; z-index:60; font-size:14px;
+}
+@keyframes floatUp{from{opacity:1; transform:translateY(0);} to{opacity:0; transform:translateY(-40px);}}
+
+/* ---------- Debrief modal ---------- */
+.modal-overlay{
+  position:fixed; inset:0; background:rgba(10,6,3,.72); backdrop-filter:blur(2px);
+  display:flex; align-items:center; justify-content:center; z-index:50; padding:20px;
+}
+.modal-card{
+  background:var(--bg-panel); border:1px solid var(--line); border-radius:18px; max-width:600px; width:100%;
+  padding:30px 32px; max-height:88vh; overflow-y:auto; box-shadow:0 40px 80px -20px rgba(0,0,0,.7);
+}
+.modal-title{font-family:var(--font-display); font-size:30px; margin:0 0 2px; color:var(--cream);}
+.modal-sub{color:var(--cream-dim); font-size:13px; margin:0 0 20px;}
+.debrief-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px;}
+.debrief-item{background:var(--bg-panel-2); border-radius:10px; padding:11px 13px; border:1px solid var(--line);}
+.debrief-item .dl{font-size:10.5px; text-transform:uppercase; letter-spacing:.08em; color:var(--cream-dim);}
+.debrief-item .dv{font-family:var(--font-mono); font-size:17px; font-weight:600; margin-top:2px;}
+.debrief-item .dv.pos{color:var(--sage-light);}
+.debrief-item .dv.neg{color:var(--red-light);}
+.debrief-item .dv.gold{color:var(--gold);}
+.event-note{
+  display:flex; gap:9px; align-items:flex-start; font-size:12.5px; color:var(--cream-dim);
+  background:var(--bg-panel-2); border-radius:10px; padding:9px 12px; margin-bottom:8px; border-left:3px solid var(--copper);
+}
+.event-note.warn{border-left-color:var(--red);}
+.event-note.good{border-left-color:var(--sage);}
+.event-note .ei{font-size:16px;}
+.chart-box{background:var(--bg-panel-2); border:1px solid var(--line); border-radius:12px; padding:12px 14px; margin-bottom:14px;}
+.chart-title{font-size:10.5px; text-transform:uppercase; letter-spacing:.08em; color:var(--cream-dim); margin-bottom:8px; display:flex; justify-content:space-between;}
+.chart-box svg{display:block; width:100%; height:auto;}
+.legend-dot{display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:4px;}
+
+/* ---------- Game over ---------- */
+.gameover-card{text-align:center;}
+.go-grade{font-family:var(--font-display); font-size:96px; line-height:1; color:var(--gold); margin:10px 0;}
+.go-title{font-size:18px; color:var(--cream); margin-bottom:4px; font-weight:700;}
+.go-sub{color:var(--cream-dim); font-size:13px; margin-bottom:22px;}
+
+/* utility */
+.btn-row{display:flex; gap:10px; margin-top:18px; flex-wrap:wrap;}
+.btn-row > *{flex:1;}
+::-webkit-scrollbar{width:8px;}
+::-webkit-scrollbar-thumb{background:var(--line); border-radius:4px;}
+</style>
+</head>
+<body>
+
+<div id="topbar" class="topbar hidden">
+  <div class="brand">
+    <div class="brand-mark">
+      <div class="steam"><span></span><span></span><span></span></div>
+      <svg viewBox="0 0 24 24" fill="none"><path d="M4 9h13a3 3 0 0 1 0 6h-1" stroke="#e3a868" stroke-width="1.6" stroke-linecap="round"/><path d="M4 9v7a3 3 0 0 0 3 3h6a3 3 0 0 0 3-3V9" stroke="#f1e4cf" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 21h14" stroke="#c97d3f" stroke-width="1.6" stroke-linecap="round"/></svg>
+    </div>
+    <div class="brand-text">Steep &amp; Sell<small id="cartNameLabel">The Cart</small></div>
+  </div>
+  <div class="stat-strip">
+    <div class="stat day"><div class="label">Day</div><div class="value" id="statDay">1/7</div></div>
+    <div class="stat cash"><div class="label">Cash</div><div class="value" id="statCash">$0.00</div></div>
+    <div class="loyalty-wrap">
+      <div class="label" style="font-size:9px; letter-spacing:.12em; text-transform:uppercase; color:var(--cream-dim);">Loyalty <span id="statLoyaltyNum" style="color:var(--sage-light); font-family:var(--font-mono);">0</span></div>
+      <div class="loyalty-bar"><div class="loyalty-fill" id="loyaltyFill"></div></div>
+    </div>
+    <div class="weather-chip">
+      <div class="icon" id="wIcon">☀️</div>
+      <div class="wtext"><div class="wname" id="wName">—</div><div class="wtemp" id="wTemp">—°C</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- SETUP -->
+  <div id="screen-setup" class="screen setup">
+    <div class="setup-card">
+      <h1 class="setup-title">Steep &amp; Sell</h1>
+      <p class="setup-sub">Run a coffee cart. Buy stock on a budget, dial in your recipe, price every cup, and read the crowd in real time. Sell out, don't spoil out.</p>
+
+      <div class="field-group">
+        <label class="field-label">Name your cart</label>
+        <input type="text" id="cartNameInput" class="text-input" placeholder="e.g. Bean There" maxlength="24">
+      </div>
+
+      <div class="field-group">
+        <label class="field-label">Run length</label>
+        <div class="choice-row" id="durationChoices">
+          <button class="choice-btn" data-days="7">
+            <div class="cb-title">7 Days</div>
+            <div class="cb-sub">Quick run</div>
+          </button>
+          <button class="choice-btn" data-days="14">
+            <div class="cb-title">14 Days</div>
+            <div class="cb-sub">Long haul, slower ramp-up</div>
+          </button>
+        </div>
+        <div class="budget-note">Every run starts with <b>$20.00</b> — regardless of length. There's no buying your way to safety on day one. Each day's profit is what funds the next day's stock, so early decisions matter.</div>
+      </div>
+
+      <button id="startGameBtn" class="primary-btn" disabled>Pick a run length to begin</button>
+    </div>
+  </div>
+
+  <!-- PREP -->
+  <div id="screen-prep" class="screen hidden">
+    <div class="prep-grid" id="prepGrid">
+
+      <div id="unlockBanner" class="unlock-banner hidden">
+        <div class="ub-text">
+          <p class="ub-title">🎉 Loyalty milestone reached</p>
+          <p class="ub-sub" id="unlockSub">Your regulars trust you now. Add a second brew to the menu and serve two different crowds at once.</p>
+        </div>
+        <button id="unlockBtn" class="primary-btn" style="width:auto;">Unlock Second Brew — $8.00</button>
+      </div>
+
+      <div class="panel">
+        <h2 class="panel-title">☕ Brew 1</h2>
+        <p class="panel-sub">Dial it in. Every cup made today uses this recipe.</p>
+
+        <div class="slider-row">
+          <div class="slider-top"><span class="sname">Strength</span><span class="sdesc" id="strengthDesc">Lvl 3</span></div>
+          <input type="range" min="1" max="5" value="3" id="rStrength">
+        </div>
+        <div class="slider-row">
+          <div class="slider-top"><span class="sname">Milk</span><span class="sdesc" id="milkDesc">Lvl 3</span></div>
+          <input type="range" min="1" max="5" value="3" id="rMilk">
+        </div>
+        <div class="slider-row">
+          <div class="slider-top"><span class="sname">Sugar</span><span class="sdesc" id="sugarDesc">Lvl 3</span></div>
+          <input type="range" min="1" max="5" value="3" id="rSugar">
+        </div>
+
+        <div class="recipe-note" id="recipeNote">A balanced cup.</div>
+        <div class="cost-line"><span>Est. cost / cup</span><b id="costPerCup">$0.00</b></div>
+        <div class="cost-caveat">Blended from what's already in stock — new purchases at today's prices will shift this.</div>
+      </div>
+
+      <div class="panel">
+        <h2 class="panel-title">💵 Price — Brew 1</h2>
+        <p class="panel-sub">You can still nudge this once the cart's open.</p>
+        <div class="price-display" id="priceDisplayPrep">$2.50</div>
+        <input type="range" min="1.00" max="6.00" step="0.10" value="2.50" id="rPrice">
+        <div class="margin-tag" id="marginTag">est. margin: $0.00 / cup</div>
+
+        <div style="margin-top:22px;">
+          <h2 class="panel-title" style="font-size:17px;" id="forecastTitle">🌦️ Forecast</h2>
+          <p class="panel-sub" style="margin-bottom:8px;" id="forecastBlurb">—</p>
+          <div class="segment-hint" id="segmentHint">—</div>
+        </div>
+
+        <button id="openCartBtn" class="primary-btn" style="margin-top:16px;">Open the Cart →</button>
+      </div>
+
+      <div class="panel">
+        <h2 class="panel-title">📦 Stock &amp; Buy</h2>
+        <p class="panel-sub">What you already have on the cart.</p>
+
+        <div class="stock-list" id="currentStockList"></div>
+
+        <div style="margin-top:16px; padding-top:14px; border-top:1px dashed var(--line);">
+          <p class="market-note" id="marketNote">Today's market rates for raw ingredients — these shift daily.</p>
+          <div class="buy-row"><div class="bicon">🥤</div><div><div class="bname">Cups</div><div class="bprice" id="p_cup"></div></div><div class="stepper"><button type="button" class="stepBtn" data-target="buy_cup" data-dir="-1" aria-label="Decrease cups">−</button><input type="number" min="0" step="5" id="buy_cup" value="0"><button type="button" class="stepBtn" data-target="buy_cup" data-dir="1" aria-label="Increase cups">+</button></div></div>
+          <div class="buy-row"><div class="bicon">🎯</div><div><div class="bname">Lids</div><div class="bprice" id="p_lid"></div></div><div class="stepper"><button type="button" class="stepBtn" data-target="buy_lid" data-dir="-1" aria-label="Decrease lids">−</button><input type="number" min="0" step="5" id="buy_lid" value="0"><button type="button" class="stepBtn" data-target="buy_lid" data-dir="1" aria-label="Increase lids">+</button></div></div>
+          <div class="buy-row"><div class="bicon">🌰</div><div><div class="bname">Coffee (g)</div><div class="bprice" id="p_coffee"></div></div><div class="stepper"><button type="button" class="stepBtn" data-target="buy_coffee" data-dir="-1" aria-label="Decrease coffee">−</button><input type="number" min="0" step="25" id="buy_coffee" value="0"><button type="button" class="stepBtn" data-target="buy_coffee" data-dir="1" aria-label="Increase coffee">+</button></div></div>
+          <div class="buy-row"><div class="bicon">🥛</div><div><div class="bname">Milk (ml)</div><div class="bprice" id="p_milk"></div></div><div class="stepper"><button type="button" class="stepBtn" data-target="buy_milk" data-dir="-1" aria-label="Decrease milk">−</button><input type="number" min="0" step="50" id="buy_milk" value="0"><button type="button" class="stepBtn" data-target="buy_milk" data-dir="1" aria-label="Increase milk">+</button></div></div>
+          <div class="buy-row"><div class="bicon">🍬</div><div><div class="bname">Sugar (g)</div><div class="bprice" id="p_sugar"></div></div><div class="stepper"><button type="button" class="stepBtn" data-target="buy_sugar" data-dir="-1" aria-label="Decrease sugar">−</button><input type="number" min="0" step="25" id="buy_sugar" value="0"><button type="button" class="stepBtn" data-target="buy_sugar" data-dir="1" aria-label="Increase sugar">+</button></div></div>
+
+          <div class="buy-summary">
+            <div class="buy-summary-row"><span class="bl">Cash now</span><b id="buyCashNow">$0.00</b></div>
+            <div class="buy-summary-row"><span class="bl">Order total</span><b id="buyTotal">$0.00</b></div>
+            <div class="buy-remaining">
+              <span class="bl">Left if you buy this</span>
+              <span class="brv" id="buyRemaining">$0.00</span>
+            </div>
+          </div>
+          <button id="buyBtn" class="secondary-btn" style="width:100%; margin-top:10px;">Add to Stock</button>
+        </div>
+      </div>
+
+      <div id="brew2Panel" class="panel brew2-panel hidden">
+        <h2 class="panel-title">☕ Brew 2 <span class="brew2-tag">Unlocked</span></h2>
+        <p class="panel-sub">A second menu item, drawing from the same stock.</p>
+
+        <div class="slider-row">
+          <div class="slider-top"><span class="sname">Strength</span><span class="sdesc" id="strengthDesc2">Lvl 3</span></div>
+          <input type="range" min="1" max="5" value="3" id="rStrength2">
+        </div>
+        <div class="slider-row">
+          <div class="slider-top"><span class="sname">Milk</span><span class="sdesc" id="milkDesc2">Lvl 3</span></div>
+          <input type="range" min="1" max="5" value="3" id="rMilk2">
+        </div>
+        <div class="slider-row">
+          <div class="slider-top"><span class="sname">Sugar</span><span class="sdesc" id="sugarDesc2">Lvl 3</span></div>
+          <input type="range" min="1" max="5" value="3" id="rSugar2">
+        </div>
+        <div class="recipe-note" id="recipeNote2">—</div>
+        <div class="cost-line"><span>Est. cost / cup</span><b id="costPerCup2">$0.00</b></div>
+
+        <div style="margin-top:18px; padding-top:16px; border-top:1px dashed var(--line);">
+          <div class="slider-top"><span class="sname">Price — Brew 2</span></div>
+          <div class="price-display small" id="priceDisplayPrep2">$2.50</div>
+          <input type="range" min="1.00" max="6.00" step="0.10" value="2.50" id="rPrice2">
+          <div class="margin-tag" id="marginTag2">est. margin: $0.00 / cup</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SERVICE -->
+  <div id="screen-service" class="screen hidden">
+    <div class="service-top">
+      <div class="cup-gauge">
+        <svg viewBox="0 0 60 74">
+          <defs><clipPath id="cupClip"><path d="M8 10 H52 L46 66 A6 6 0 0 1 40 71 H20 A6 6 0 0 1 14 66 Z"/></clipPath></defs>
+          <path d="M8 10 H52 L46 66 A6 6 0 0 1 40 71 H20 A6 6 0 0 1 14 66 Z" fill="#2c2016" stroke="#4a3a29" stroke-width="2"/>
+          <rect id="cupLiquid" x="8" y="71" width="44" height="0" fill="#c97d3f" clip-path="url(#cupClip)"/>
+          <path d="M52 18 h5 a7 7 0 0 1 0 14 h-4" fill="none" stroke="#4a3a29" stroke-width="2"/>
+        </svg>
+        <div class="gauge-label" id="cupGaugeLabel">0 sold</div>
+      </div>
+      <div style="flex:1;">
+        <h2 class="panel-title" style="margin-bottom:2px;">Service is live</h2>
+        <p class="panel-sub" style="margin-bottom:0;">Watch the queue, adjust price on the fly, don't run dry.</p>
+      </div>
+      <button id="skipDayBtn" class="secondary-btn">Fast-forward day ⏭</button>
+    </div>
+
+    <div class="panel scene-panel">
+      <canvas id="sceneCanvas" width="620" height="200"></canvas>
+      <div class="trio-stats">
+        <div class="trio-stat bought"><div class="ti">☕</div><div class="tv" id="triBought">0</div><div class="tl">Bought</div></div>
+        <div class="trio-stat declined"><div class="ti">🙅</div><div class="tv" id="triDeclined">0</div><div class="tl">Declined</div></div>
+        <div class="trio-stat nostock"><div class="ti">🚫</div><div class="tv" id="triNoStock">0</div><div class="tl">No Stock</div></div>
+      </div>
+    </div>
+
+    <div class="service-grid">
+      <div class="panel">
+        <h2 class="panel-title" style="font-size:16px;">Live Price</h2>
+
+        <div class="live-price-block">
+          <div class="lp-label">Brew 1</div>
+          <div class="live-price-row">
+            <div class="price-display" id="livePriceDisplay">$2.50</div>
+            <input type="range" min="1.00" max="6.00" step="0.10" value="2.50" id="rLivePrice" style="flex:1;">
+          </div>
+          <div class="margin-tag" id="liveMarginTag" style="text-align:left; margin-top:6px;">margin —</div>
+        </div>
+
+        <div class="live-price-block hidden" id="livePrice2Block">
+          <div class="lp-label">Brew 2</div>
+          <div class="live-price-row">
+            <div class="price-display" id="livePriceDisplay2">$2.50</div>
+            <input type="range" min="1.00" max="6.00" step="0.10" value="2.50" id="rLivePrice2" style="flex:1;">
+          </div>
+          <div class="margin-tag" id="liveMarginTag2" style="text-align:left; margin-top:6px;">margin —</div>
+        </div>
+
+        <div class="mini-log" id="miniLog"></div>
+      </div>
+
+      <div class="service-stats">
+        <div class="mini-stat"><span class="msl">Revenue today</span><span class="msv" id="liveRevenue">$0.00</span></div>
+        <div class="mini-stat"><span class="msl">Cups left</span><span class="msv" id="liveCupsLeft">0</span></div>
+        <div class="mini-stat"><span class="msl">Milk left</span><span class="msv" id="liveMilkLeft">0 ml</span></div>
+        <div class="mini-stat"><span class="msl">Coffee left</span><span class="msv" id="liveCoffeeLeft">0 g</span></div>
+        <div class="mini-stat"><span class="msl">Sugar left</span><span class="msv" id="liveSugarLeft">0 g</span></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- DEBRIEF MODAL -->
+<div id="debriefModal" class="modal-overlay hidden">
+  <div class="modal-card">
+    <h2 class="modal-title" id="debriefTitle">Day 1 Debrief</h2>
+    <p class="modal-sub" id="debriefSub">Here's how it went.</p>
+    <div class="debrief-grid" id="debriefGrid"></div>
+
+    <div class="chart-box">
+      <div class="chart-title"><span>Today's Outcomes</span></div>
+      <div id="chartOutcomes"></div>
+    </div>
+    <div id="chartTrendWrap"></div>
+
+    <div id="debriefEvents"></div>
+    <div class="btn-row">
+      <button id="nextDayBtn" class="primary-btn">Next Day →</button>
+    </div>
+  </div>
+</div>
+
+<!-- GAME OVER -->
+<div id="gameoverModal" class="modal-overlay hidden">
+  <div class="modal-card gameover-card">
+    <p class="panel-sub" style="margin-bottom:0;">Final tally</p>
+    <div class="go-grade" id="goGrade">A</div>
+    <div class="go-title" id="goTitle">Certified Bean Baron</div>
+    <div class="go-sub" id="goSub">—</div>
+    <div class="debrief-grid" id="goGrid"></div>
+    <div class="btn-row">
+      <button id="restartBtn" class="primary-btn">Run It Back</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ---------------- CONFIG ---------------- */
+const STARTING_CASH = 20.00;
+const ING_BASE = { cup:0.05, lid:0.04, coffee:0.024, milk:0.011, sugar:0.006 };
+const grams = { strength: l => 4 + l*2, milk: l => l*18, sugar: l => l*2 };
+const STRENGTH_LABEL = {1:'Weak',2:'Light',3:'Balanced',4:'Bold',5:'Rocket Fuel'};
+const MILK_LABEL = {1:'Splash',2:'Light',3:'Creamy',4:'Milky',5:'Flat White+'};
+const SUGAR_LABEL = {1:'Bitter',2:'Light',3:'Sweet',4:'Sweet Tooth',5:'Dessert'};
+const DAY_NAMES = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+const WEEKEND_IDX = [5,6];
+const UNLOCK_LOYALTY = 35;
+const UNLOCK_COST = 8.00;
+const WEATHER_TYPES = [
+  {name:'Crisp & Cold', icon:'❄️', tempRange:[2,11], demandMult:1.05},
+  {name:'Mild & Pleasant', icon:'🌤️', tempRange:[12,19], demandMult:1.28},
+  {name:'Warm', icon:'☀️', tempRange:[20,26], demandMult:1.0},
+  {name:'Scorching Hot', icon:'🔥', tempRange:[27,35], demandMult:0.58},
+  {name:'Rainy', icon:'🌧️', tempRange:[9,17], demandMult:0.8},
+  {name:'Overcast', icon:'☁️', tempRange:[13,20], demandMult:1.08},
+];
+const SEGMENTS = [
+  {key:'purist', label:'Purists', hint:"Word is today's crowd wants it strong, no fuss.", strength:4.4, strengthSd:0.6, milk:1.6, milkSd:0.7, sugar:1.4, sugarSd:0.6, priceLo:2.2, priceHi:4.8},
+  {key:'sweet', label:'Sweet Tooths', hint:"Sounds like a sweet-toothed crowd today.", strength:2.2, strengthSd:0.8, milk:3.6, milkSd:0.8, sugar:4.3, sugarSd:0.7, priceLo:1.8, priceHi:4.2},
+  {key:'milky', label:'Milk Lovers', hint:"Milky, creamy cups should do best today.", strength:2.6, strengthSd:0.7, milk:4.4, milkSd:0.6, sugar:2.4, sugarSd:0.8, priceLo:1.8, priceHi:4.4},
+  {key:'balanced', label:'Balanced', hint:"No strong signal — a middle-of-the-road cup should do fine.", strength:3, strengthSd:0.7, milk:3, milkSd:0.7, sugar:2.8, sugarSd:0.8, priceLo:1.8, priceHi:4.4},
+  {key:'budget', label:'Budget-Minded', hint:"Budget-conscious crowd expected — keep it cheap or lose them.", strength:2.2, strengthSd:0.8, milk:1.8, milkSd:0.8, sugar:1.8, sugarSd:0.8, priceLo:1.3, priceHi:2.8},
+];
+const PALETTES = [
+  {H:'#3b2a1a',F:'#e8b98a',S:'#c97d3f',P:'#3c2a1d',L:'#1c1410'},
+  {H:'#1a1a1a',F:'#caa06a',S:'#8fa888',P:'#33241a',L:'#111111'},
+  {H:'#7a4a2a',F:'#f1cf9e',S:'#d1594a',P:'#2a2016',L:'#151515'},
+  {H:'#e8b94a',F:'#e8b98a',S:'#4a6a8f',P:'#241a12',L:'#0c0c0c'},
+  {H:'#4a2a1a',F:'#8a5a3a',S:'#e3a868',P:'#1c1410',L:'#0c0c0c'},
+  {H:'#1a1a1a',F:'#f1e4cf',S:'#9a4a6a',P:'#2c2016',L:'#111111'},
+  {H:'#5a3a20',F:'#d9a26a',S:'#6a8f6a',P:'#221a12',L:'#0c0c0c'},
+];
+const SHAPE = [
+ "..HHHH..",
+ ".HFFFFH.",
+ ".FFFFFF.",
+ "..SSSS..",
+ ".SSSSSS.",
+ ".SSSSSS.",
+ ".SSSSSS.",
+ "..PPPP..",
+ "..PPPP..",
+ ".LL..LL.",
+];
+const SHAPE_FEET_B = ".L....L.";
+
+/* ---------------- STATE ---------------- */
+let game = null;
+let chosenDays = null;
+let scene = null;
+let animHandle = null;
+let fastForward = false;
+
+/* ---------------- HELPERS ---------------- */
+function $(id){ return document.getElementById(id); }
+function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
+function fmt(n){ return '$' + n.toFixed(2); }
+function randInt(a,b){ return Math.floor(a + Math.random()*(b-a+1)); }
+function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+function gaussian(mean,std){
+  let u=1-Math.random(), v=Math.random();
+  let z = Math.sqrt(-2*Math.log(u)) * Math.cos(2*Math.PI*v);
+  return mean + z*std;
+}
+function fluct(){ return clamp(gaussian(1,0.13), 0.7, 1.45); }
+
+function effectiveRate(ing){
+  return game.stock[ing] > 0 ? game.avgCost[ing] : game.rates[ing];
+}
+function costPerCup(recipeKey){
+  const r = recipeKey==='2' ? game.recipe2 : game.recipe;
+  return game.rates.cup + game.rates.lid
+    + grams.strength(r.strength)*effectiveRate('coffee')
+    + grams.milk(r.milk)*effectiveRate('milk')
+    + grams.sugar(r.sugar)*effectiveRate('sugar');
+}
+
+function rollWeather(){
+  const t = pick(WEATHER_TYPES);
+  const temp = randInt(t.tempRange[0], t.tempRange[1]);
+  return { name:t.name, icon:t.icon, tempC:temp, demandMult:t.demandMult };
+}
+
+function rollDayMix(){
+  const dominant = pick(SEGMENTS);
+  const weights = {};
+  let remaining = 1;
+  const domWeight = 0.4 + Math.random()*0.2;
+  weights[dominant.key] = domWeight;
+  remaining -= domWeight;
+  const others = SEGMENTS.filter(s=>s.key!==dominant.key);
+  let raw = others.map(()=>Math.random());
+  const rawSum = raw.reduce((a,b)=>a+b,0);
+  others.forEach((s,i)=>{ weights[s.key] = remaining * (raw[i]/rawSum); });
+  return { weights, dominant };
+}
+
+function pickSegment(weights){
+  const r = Math.random();
+  let acc = 0;
+  for(const seg of SEGMENTS){
+    acc += weights[seg.key] || 0;
+    if(r <= acc) return seg;
+  }
+  return SEGMENTS[SEGMENTS.length-1];
+}
+
+/* ---------------- SETUP SCREEN ---------------- */
+document.querySelectorAll('#durationChoices .choice-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('#durationChoices .choice-btn').forEach(b=>b.classList.remove('selected'));
+    btn.classList.add('selected');
+    chosenDays = parseInt(btn.dataset.days,10);
+    $('startGameBtn').disabled = false;
+    $('startGameBtn').textContent = `Start the Run — ${fmt(STARTING_CASH)} to spend →`;
+  });
+});
+
+$('startGameBtn').addEventListener('click', startGame);
+
+function startGame(){
+  const name = $('cartNameInput').value.trim() || 'The Cart';
+  game = {
+    cartName: name,
+    durationDays: chosenDays,
+    day: 1,
+    cash: STARTING_CASH,
+    loyalty: 8,
+    stock: { cups:0, lids:0, coffee:0, milk:0, sugar:0 },
+    avgCost: { coffee:0, milk:0, sugar:0 },
+    recipe: { strength:3, milk:3, sugar:3 },
+    price: 2.5,
+    secondRecipeUnlocked: false,
+    recipe2: { strength:3, milk:3, sugar:3 },
+    price2: 2.5,
+    weather: null,
+    rates: null,
+    prevRates: null,
+    isWeekend: false,
+    dayName: '',
+    dayMix: null,
+    totals: { revenue:0, cogs:0, sold:0, spentOnStock:0 },
+    dayStats: null,
+    history: [],
+  };
+  $('cartNameLabel').textContent = name;
+  $('screen-setup').classList.add('hidden');
+  $('topbar').classList.remove('hidden');
+  beginDay();
+}
+
+/* ---------------- BEGIN DAY (PREP) ---------------- */
+function beginDay(){
+  if(game.day > 1 && isBankrupt()){
+    showGameOver(true);
+    return;
+  }
+
+  const dayIdx = (game.day-1) % 7;
+  game.dayName = DAY_NAMES[dayIdx];
+  game.isWeekend = WEEKEND_IDX.indexOf(dayIdx) !== -1;
+
+  game.weather = rollWeather();
+  game.dayMix = rollDayMix();
+
+  game.prevRates = game.rates;
+  game.rates = {
+    cup: ING_BASE.cup,
+    lid: ING_BASE.lid,
+    coffee: ING_BASE.coffee * fluct(),
+    milk: ING_BASE.milk * fluct(),
+    sugar: ING_BASE.sugar * fluct(),
+  };
+
+  game.dayStats = { sold:0, sold1:0, sold2:0, revenue:0, revenue1:0, revenue2:0, cogs:0, missedStock:0, missedPrice:0, missedTaste:0, loyaltyStart:game.loyalty };
+
+  renderTopbar();
+  renderPrep();
+
+  $('screen-service').classList.add('hidden');
+  $('screen-prep').classList.remove('hidden');
+}
+
+function weatherBlurb(w){
+  const demandTxt = w.demandMult >= 1.15 ? "Expect a strong crowd." :
+                     w.demandMult <= 0.7 ? "Foot traffic will be thin — people buy less when it's this hot." :
+                     w.demandMult < 1 ? "Slightly quieter than usual." : "Steady, average turnout expected.";
+  return `${w.icon} ${w.name}, ${w.tempC}°C. ${demandTxt}`;
+}
+
+function renderTopbar(){
+  $('statDay').textContent = `${game.day}/${game.durationDays}`;
+  $('statCash').textContent = fmt(game.cash);
+  $('statLoyaltyNum').textContent = Math.round(game.loyalty);
+  $('loyaltyFill').style.width = clamp(game.loyalty,0,100) + '%';
+  $('wIcon').textContent = game.weather.icon;
+  $('wName').textContent = game.weather.name;
+  $('wTemp').textContent = game.weather.tempC + '°C';
+}
+
+function recipeNoteText(r){
+  let notes = [];
+  if(r.strength>=4) notes.push("intense — thrill-seekers love it, purists of the mild kind may recoil");
+  if(r.strength<=2) notes.push("gentle on the palate");
+  if(r.milk>=4) notes.push("very creamy");
+  if(r.milk<=1) notes.push("almost no milk");
+  if(r.sugar>=4) notes.push("seriously sweet");
+  if(r.sugar<=1) notes.push("bitter, no sugar crutch");
+  if(notes.length===0) notes.push("a crowd-pleasing, balanced cup — but pleasing nobody in particular");
+  return "This is " + notes.join(", ") + ".";
+}
+
+function renderPrep(){
+  const title = `📅 ${game.dayName}${game.isWeekend ? ' <span class="weekend-badge">Weekend Rush</span>' : ''}`;
+  $('forecastTitle').innerHTML = title;
+  $('forecastBlurb').textContent = weatherBlurb(game.weather) + (game.isWeekend ? ' Weekend crowds are bigger and looser with their wallets.' : '');
+  $('segmentHint').textContent = game.dayMix.dominant.hint;
+
+  // Unlock banner
+  if(!game.secondRecipeUnlocked && game.loyalty >= UNLOCK_LOYALTY){
+    $('unlockBanner').classList.remove('hidden');
+    const canAfford = game.cash >= UNLOCK_COST;
+    $('unlockBtn').disabled = !canAfford;
+    $('unlockBtn').textContent = canAfford ? `Unlock Second Brew — ${fmt(UNLOCK_COST)}` : `Need ${fmt(UNLOCK_COST)} (have ${fmt(game.cash)})`;
+  } else {
+    $('unlockBanner').classList.add('hidden');
+  }
+  $('brew2Panel').classList.toggle('hidden', !game.secondRecipeUnlocked);
+
+  renderRecipeSliders();
+  $('rPrice').value = game.price;
+  $('priceDisplayPrep').textContent = fmt(game.price);
+  $('marginTag').textContent = `est. margin: ${fmt(game.price - costPerCup('1'))} / cup`;
+
+  if(game.secondRecipeUnlocked){
+    $('rPrice2').value = game.price2;
+    $('priceDisplayPrep2').textContent = fmt(game.price2);
+    $('marginTag2').textContent = `est. margin: ${fmt(game.price2 - costPerCup('2'))} / cup`;
+  }
+
+  renderCurrentStock();
+  renderBuyPanel();
+}
+
+function renderRecipeSliders(){
+  $('rStrength').value = game.recipe.strength;
+  $('rMilk').value = game.recipe.milk;
+  $('rSugar').value = game.recipe.sugar;
+  updateSliderFill('rStrength'); updateSliderFill('rMilk'); updateSliderFill('rSugar');
+  $('strengthDesc').textContent = `Lvl ${game.recipe.strength} · ${STRENGTH_LABEL[game.recipe.strength]}`;
+  $('milkDesc').textContent = `Lvl ${game.recipe.milk} · ${MILK_LABEL[game.recipe.milk]}`;
+  $('sugarDesc').textContent = `Lvl ${game.recipe.sugar} · ${SUGAR_LABEL[game.recipe.sugar]}`;
+  $('recipeNote').textContent = recipeNoteText(game.recipe);
+  $('costPerCup').textContent = fmt(costPerCup('1'));
+
+  if(game.secondRecipeUnlocked){
+    $('rStrength2').value = game.recipe2.strength;
+    $('rMilk2').value = game.recipe2.milk;
+    $('rSugar2').value = game.recipe2.sugar;
+    updateSliderFill('rStrength2'); updateSliderFill('rMilk2'); updateSliderFill('rSugar2');
+    $('strengthDesc2').textContent = `Lvl ${game.recipe2.strength} · ${STRENGTH_LABEL[game.recipe2.strength]}`;
+    $('milkDesc2').textContent = `Lvl ${game.recipe2.milk} · ${MILK_LABEL[game.recipe2.milk]}`;
+    $('sugarDesc2').textContent = `Lvl ${game.recipe2.sugar} · ${SUGAR_LABEL[game.recipe2.sugar]}`;
+    $('recipeNote2').textContent = recipeNoteText(game.recipe2);
+    $('costPerCup2').textContent = fmt(costPerCup('2'));
+  }
+}
+
+function updateSliderFill(id){
+  const el = $(id);
+  const pct = ((el.value-1)/4)*100;
+  el.style.setProperty('--fill', pct+'%');
+}
+
+['rStrength','rMilk','rSugar'].forEach(id=>{
+  $(id).addEventListener('input', ()=>{
+    game.recipe.strength = parseInt($('rStrength').value,10);
+    game.recipe.milk = parseInt($('rMilk').value,10);
+    game.recipe.sugar = parseInt($('rSugar').value,10);
+    renderRecipeSliders();
+    $('marginTag').textContent = `est. margin: ${fmt(game.price - costPerCup('1'))} / cup`;
+    renderCurrentStock();
+  });
+});
+
+$('rPrice').addEventListener('input', ()=>{
+  game.price = parseFloat($('rPrice').value);
+  $('priceDisplayPrep').textContent = fmt(game.price);
+  $('marginTag').textContent = `est. margin: ${fmt(game.price - costPerCup('1'))} / cup`;
+});
+
+['rStrength2','rMilk2','rSugar2'].forEach(id=>{
+  $(id).addEventListener('input', ()=>{
+    game.recipe2.strength = parseInt($('rStrength2').value,10);
+    game.recipe2.milk = parseInt($('rMilk2').value,10);
+    game.recipe2.sugar = parseInt($('rSugar2').value,10);
+    renderRecipeSliders();
+    $('marginTag2').textContent = `est. margin: ${fmt(game.price2 - costPerCup('2'))} / cup`;
+    renderCurrentStock();
+  });
+});
+
+$('rPrice2').addEventListener('input', ()=>{
+  game.price2 = parseFloat($('rPrice2').value);
+  $('priceDisplayPrep2').textContent = fmt(game.price2);
+  $('marginTag2').textContent = `est. margin: ${fmt(game.price2 - costPerCup('2'))} / cup`;
+});
+
+$('unlockBtn').addEventListener('click', ()=>{
+  if(game.cash < UNLOCK_COST) return;
+  game.cash -= UNLOCK_COST;
+  game.secondRecipeUnlocked = true;
+  renderTopbar();
+  renderPrep();
+});
+
+function renderCurrentStock(){
+  const items = [
+    {icon:'🥤', name:'Cups', val:game.stock.cups, cap: Math.max(game.stock.cups,60), unit:''},
+    {icon:'🎯', name:'Lids', val:game.stock.lids, cap: Math.max(game.stock.lids,60), unit:''},
+    {icon:'🌰', name:'Coffee', val:game.stock.coffee, cap: Math.max(game.stock.coffee,400), unit:'g'},
+    {icon:'🥛', name:'Milk', val:game.stock.milk, cap: Math.max(game.stock.milk,1200), unit:'ml'},
+    {icon:'🍬', name:'Sugar', val:game.stock.sugar, cap: Math.max(game.stock.sugar,200), unit:'g'},
+  ];
+  $('currentStockList').innerHTML = items.map(it=>{
+    const pct = it.cap>0 ? Math.min(100,(it.val/it.cap)*100) : 0;
+    const low = it.val < it.cap*0.15;
+    return `<div class="stock-item">
+      <div class="stock-icon">${it.icon}</div>
+      <div><div class="stock-name">${it.name}</div><div class="stock-bar-track"><div class="stock-bar-fill ${low?'low':''}" style="width:${pct}%"></div></div></div>
+      <div class="stock-qty">${it.val}${it.unit}</div>
+    </div>`;
+  }).join('');
+}
+
+function arrowHtml(key){
+  if(!game.prevRates) return '';
+  const now = game.rates[key], prev = game.prevRates[key];
+  if(Math.abs(now-prev) < 0.0005) return '';
+  return now > prev ? '<span class="rate-arrow up">▲</span>' : '<span class="rate-arrow down">▼</span>';
+}
+
+function renderBuyPanel(){
+  $('p_cup').innerHTML = fmt(game.rates.cup) + ' each';
+  $('p_lid').innerHTML = fmt(game.rates.lid) + ' each';
+  $('p_coffee').innerHTML = fmt(game.rates.coffee) + ' /g ' + arrowHtml('coffee');
+  $('p_milk').innerHTML = fmt(game.rates.milk) + ' /ml ' + arrowHtml('milk');
+  $('p_sugar').innerHTML = fmt(game.rates.sugar) + ' /g ' + arrowHtml('sugar');
+  updateBuyTotal();
+}
+
+function updateBuyTotal(){
+  const q = {
+    cup: parseFloat($('buy_cup').value)||0,
+    lid: parseFloat($('buy_lid').value)||0,
+    coffee: parseFloat($('buy_coffee').value)||0,
+    milk: parseFloat($('buy_milk').value)||0,
+    sugar: parseFloat($('buy_sugar').value)||0,
+  };
+  const rt = game.rates;
+  const total = q.cup*rt.cup + q.lid*rt.lid + q.coffee*rt.coffee + q.milk*rt.milk + q.sugar*rt.sugar;
+  const remaining = game.cash - total;
+  $('buyCashNow').textContent = fmt(game.cash);
+  $('buyTotal').textContent = fmt(total);
+  $('buyTotal').style.color = remaining < 0 ? 'var(--red-light)' : '';
+  $('buyRemaining').textContent = fmt(remaining);
+  $('buyRemaining').classList.toggle('neg', remaining < 0);
+  return {q, total};
+}
+['buy_cup','buy_lid','buy_coffee','buy_milk','buy_sugar'].forEach(id=>{
+  $(id).addEventListener('input', updateBuyTotal);
+});
+
+function stepInput(id, dir){
+  const el = $(id);
+  const step = parseFloat(el.step) || 1;
+  const next = Math.max(0, (parseFloat(el.value)||0) + dir*step);
+  el.value = next;
+  el.dispatchEvent(new Event('input', {bubbles:true}));
+}
+
+document.querySelectorAll('.stepBtn').forEach(btn=>{
+  const id = btn.dataset.target;
+  const dir = parseInt(btn.dataset.dir, 10);
+  let holdTimer = null, repeatTimer = null;
+
+  const start = (e)=>{
+    e.preventDefault();
+    stepInput(id, dir);
+    holdTimer = setTimeout(()=>{
+      repeatTimer = setInterval(()=>stepInput(id, dir), 90);
+    }, 420);
+  };
+  const stop = ()=>{
+    clearTimeout(holdTimer);
+    clearInterval(repeatTimer);
+  };
+
+  btn.addEventListener('mousedown', start);
+  btn.addEventListener('touchstart', start, {passive:false});
+  ['mouseup','mouseleave','touchend','touchcancel'].forEach(ev=>btn.addEventListener(ev, stop));
+});
+
+$('buyBtn').addEventListener('click', ()=>{
+  const {q, total} = updateBuyTotal();
+  if(total<=0) return;
+  if(total > game.cash + 1e-9){
+    flashShake($('buyBtn'));
+    return;
+  }
+  game.cash -= total;
+  game.totals.spentOnStock += total;
+
+  ['coffee','milk','sugar'].forEach(ing=>{
+    const bought = q[ing];
+    if(bought>0){
+      const oldQty = game.stock[ing];
+      const oldCost = game.avgCost[ing];
+      const newQty = oldQty + bought;
+      game.avgCost[ing] = newQty>0 ? ((oldQty*oldCost) + (bought*game.rates[ing])) / newQty : 0;
+    }
+  });
+
+  game.stock.cups += q.cup;
+  game.stock.lids += q.lid;
+  game.stock.coffee += q.coffee;
+  game.stock.milk += q.milk;
+  game.stock.sugar += q.sugar;
+  ['buy_cup','buy_lid','buy_coffee','buy_milk','buy_sugar'].forEach(id=>$(id).value=0);
+  updateBuyTotal();
+  renderCurrentStock();
+  renderRecipeSliders();
+  $('marginTag').textContent = `est. margin: ${fmt(game.price - costPerCup('1'))} / cup`;
+  if(game.secondRecipeUnlocked) $('marginTag2').textContent = `est. margin: ${fmt(game.price2 - costPerCup('2'))} / cup`;
+  renderTopbar();
+});
+
+function flashShake(el){
+  el.animate([{transform:'translateX(0)'},{transform:'translateX(-4px)'},{transform:'translateX(4px)'},{transform:'translateX(0)'}], {duration:250});
+}
+
+/* ---------------- BANKRUPTCY CHECK ---------------- */
+function isBankrupt(){
+  const rt = game.rates || { cup:ING_BASE.cup, lid:ING_BASE.lid, coffee:ING_BASE.coffee, milk:ING_BASE.milk, sugar:ING_BASE.sugar };
+  const minCupCost = rt.cup + rt.lid + grams.strength(1)*rt.coffee + grams.milk(1)*rt.milk + grams.sugar(1)*rt.sugar;
+  const canAfford = game.cash >= minCupCost - 1e-9;
+  const canMakeFromStock = game.stock.cups>=1 && game.stock.lids>=1 && game.stock.coffee>=grams.strength(1) && game.stock.milk>=grams.milk(1) && game.stock.sugar>=grams.sugar(1);
+  return !canAfford && !canMakeFromStock;
+}
+
+/* ---------------- OPEN CART / SERVICE ---------------- */
+$('openCartBtn').addEventListener('click', ()=>{
+  if(game.stock.cups<1 || game.stock.lids<1){
+    if(!confirm("You have little to no cups/lids in stock — you'll turn away most customers. Open anyway?")) return;
+  }
+  startService();
+});
+
+function startService(){
+  $('screen-prep').classList.add('hidden');
+  $('screen-service').classList.remove('hidden');
+  $('rLivePrice').value = game.price;
+  $('livePriceDisplay').textContent = fmt(game.price);
+  $('liveMarginTag').textContent = `margin ${fmt(game.price - costPerCup('1'))}`;
+  $('livePrice2Block').classList.toggle('hidden', !game.secondRecipeUnlocked);
+  if(game.secondRecipeUnlocked){
+    $('rLivePrice2').value = game.price2;
+    $('livePriceDisplay2').textContent = fmt(game.price2);
+    $('liveMarginTag2').textContent = `margin ${fmt(game.price2 - costPerCup('2'))}`;
+  }
+  $('miniLog').innerHTML = '';
+  fastForward = false;
+  $('skipDayBtn').textContent = 'Fast-forward day ⏭';
+  updateLiveStats();
+  updateCupGauge(0);
+
+  const canvas = $('sceneCanvas');
+  const ctx = canvas.getContext('2d');
+  const queueList = generateCustomers();
+
+  scene = {
+    ctx, canvas,
+    W: canvas.width, H: canvas.height,
+    groundY: 168,
+    targetX: 150,
+    queue: queueList,
+    active: [],
+    lastSpawn: 0,
+    spawnGap: 950,
+    running: true,
+    lastFrame: 0,
+  };
+
+  animHandle = requestAnimationFrame(loopFrame);
+}
+
+$('rLivePrice').addEventListener('input', ()=>{
+  game.price = parseFloat($('rLivePrice').value);
+  $('livePriceDisplay').textContent = fmt(game.price);
+  $('liveMarginTag').textContent = `margin ${fmt(game.price - costPerCup('1'))}`;
+});
+$('rLivePrice2').addEventListener('input', ()=>{
+  game.price2 = parseFloat($('rLivePrice2').value);
+  $('livePriceDisplay2').textContent = fmt(game.price2);
+  $('liveMarginTag2').textContent = `margin ${fmt(game.price2 - costPerCup('2'))}`;
+});
+
+$('skipDayBtn').addEventListener('click', ()=>{
+  fastForward = true;
+  $('skipDayBtn').textContent = 'Skipping…';
+});
+
+function generateCustomers(){
+  const w = game.weather;
+  const progress = game.day / game.durationDays;
+  const base = 8 + Math.floor(progress * 11);
+  const demandMult = w.demandMult * (game.isWeekend ? 1.35 : 1);
+  const loyaltyFactor = 1 + game.loyalty/220;
+  const count = Math.max(4, Math.round(base * demandMult * loyaltyFactor * (0.85+Math.random()*0.3)));
+  const list = [];
+  for(let i=0;i<count;i++){
+    const seg = pickSegment(game.dayMix.weights);
+    const maxPrice = +(seg.priceLo + Math.random()*(seg.priceHi-seg.priceLo) + (game.loyalty/100)*0.5 - (demandMult<0.7?0.2:0)).toFixed(2);
+    list.push({
+      segment: seg.key,
+      prefStrength: clamp(Math.round(gaussian(seg.strength,seg.strengthSd)),1,5),
+      prefMilk: clamp(Math.round(gaussian(seg.milk,seg.milkSd)),1,5),
+      prefSugar: clamp(Math.round(gaussian(seg.sugar,seg.sugarSd)),1,5),
+      maxPrice: Math.max(1.0, maxPrice),
+      palette: pick(PALETTES),
+    });
+  }
+  return list;
+}
+
+/* ---------------- CANVAS SCENE ---------------- */
+function drawCart(ctx){
+  ctx.fillStyle = '#0f0a07';
+  ctx.fillRect(0,0,scene.W,scene.H);
+
+  const grad = ctx.createLinearGradient(0,0,0,scene.H);
+  grad.addColorStop(0,'#1c130c');
+  grad.addColorStop(1,'#0f0a07');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0,0,scene.W,scene.H);
+
+  ctx.fillStyle = '#241a12';
+  ctx.fillRect(0, scene.groundY+8, scene.W, scene.H-scene.groundY-8);
+  ctx.fillStyle = '#332415';
+  ctx.fillRect(0, scene.groundY+6, scene.W, 3);
+
+  ctx.fillStyle = '#120c08';
+  ctx.beginPath(); ctx.arc(45, scene.groundY+2, 9, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(100, scene.groundY+2, 9, 0, Math.PI*2); ctx.fill();
+
+  ctx.fillStyle = '#4a3220';
+  ctx.fillRect(20, scene.groundY-70, 100, 65);
+  ctx.fillStyle = '#5c4028';
+  ctx.fillRect(20, scene.groundY-70, 100, 10);
+  ctx.fillStyle = '#e3a868';
+  ctx.fillRect(14, scene.groundY-42, 112, 8);
+
+  for(let i=0;i<6;i++){
+    ctx.fillStyle = i%2===0 ? '#c97d3f' : '#f1e4cf';
+    ctx.beginPath();
+    ctx.moveTo(20+i*17, scene.groundY-70);
+    ctx.lineTo(20+(i+1)*17, scene.groundY-70);
+    ctx.lineTo(20+(i+1)*17-4, scene.groundY-58);
+    ctx.lineTo(20+i*17+4, scene.groundY-58);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  ctx.fillStyle = '#241a12';
+  ctx.fillRect(28, scene.groundY-92, 84, 20);
+  ctx.strokeStyle = '#c97d3f';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(28, scene.groundY-92, 84, 20);
+  ctx.fillStyle = '#f1e4cf';
+  ctx.font = '11px "Kalam", cursive';
+  ctx.textAlign = 'center';
+  const label = (game.cartName || 'The Cart').slice(0,14);
+  ctx.fillText(label, 70, scene.groundY-78);
+
+  ctx.fillStyle = '#f1e4cf';
+  ctx.fillRect(120, scene.groundY-56, 10, 12);
+  const t = performance.now()/500;
+  ctx.strokeStyle = 'rgba(241,228,207,0.5)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(122, scene.groundY-58);
+  ctx.quadraticCurveTo(125+Math.sin(t)*2, scene.groundY-66, 122, scene.groundY-74);
+  ctx.stroke();
+
+  ctx.textAlign = 'left';
+}
+
+function drawPerson(ctx, cx, groundY, scale, palette, frame){
+  const rows = SHAPE.slice();
+  if(frame===1) rows[9] = SHAPE_FEET_B;
+  const w = 8, h = rows.length;
+  const originX = cx - (w*scale)/2;
+  const originY = groundY - h*scale;
+  const colorMap = { H:palette.H, F:palette.F, S:palette.S, P:palette.P, L:palette.L };
+  for(let r=0;r<h;r++){
+    const row = rows[r];
+    for(let c=0;c<w;c++){
+      const ch = row[c];
+      if(ch==='.') continue;
+      ctx.fillStyle = colorMap[ch];
+      ctx.fillRect(Math.round(originX+c*scale), Math.round(originY+r*scale), scale, scale);
+    }
+  }
+}
+
+function iconForResult(result){
+  if(result.outcome==='sale') return '☕';
+  if(result.outcome==='no_stock') return '🚫';
+  if(result.reason==='price') return '💸';
+  return '😖';
+}
+
+function loopFrame(t){
+  if(!scene || !scene.running){ return; }
+  const dt = scene.lastFrame ? (t - scene.lastFrame) : 16;
+  scene.lastFrame = t;
+  const ctx = scene.ctx;
+
+  const gap = fastForward ? 90 : scene.spawnGap;
+  if(scene.queue.length>0 && (t - scene.lastSpawn) > gap){
+    const c = scene.queue.shift();
+    scene.active.push({
+      c, x: scene.W + 20, state:'in', frame:0, frameTimer:0, waitTimer:0, evaluated:false, result:null,
+    });
+    scene.lastSpawn = t;
+  }
+
+  drawCart(ctx);
+
+  const speed = (fastForward ? 8 : 1.5) * (dt/16.67);
+  for(let i=scene.active.length-1;i>=0;i--){
+    const o = scene.active[i];
+    o.frameTimer += dt;
+    if(o.frameTimer > 150){ o.frame = 1-o.frame; o.frameTimer = 0; }
+
+    if(o.state==='in'){
+      o.x -= speed;
+      if(o.x <= scene.targetX){
+        o.x = scene.targetX;
+        o.state = 'wait';
+        if(!o.evaluated){
+          o.evaluated = true;
+          const result = evaluateCustomer(o.c);
+          o.result = result;
+          o.icon = iconForResult(result);
+          logMini(result);
+          updateLiveStats();
+          updateTrio();
+          updateCupGauge(game.dayStats.sold);
+          if(result.outcome==='sale') spawnCashToast(o.x, result.price);
+        }
+      }
+    } else if(o.state==='wait'){
+      o.waitTimer += dt;
+      if(o.waitTimer > (fastForward ? 60 : 600)) o.state = 'out';
+    } else if(o.state==='out'){
+      o.x += speed*1.15;
+      if(o.x > scene.W + 30){ scene.active.splice(i,1); continue; }
+    }
+
+    drawPerson(ctx, o.x, scene.groundY, 3, o.c.palette, o.frame);
+    if(o.result){
+      ctx.font = '16px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(o.icon, o.x, scene.groundY - 46);
+      ctx.textAlign = 'left';
+    }
+  }
+
+  if(scene.queue.length===0 && scene.active.length===0){
+    scene.running = false;
+    setTimeout(endService, 400);
+    return;
+  }
+
+  animHandle = requestAnimationFrame(loopFrame);
+}
+
+function spawnCashToast(sceneX, price){
+  const canvas = $('sceneCanvas');
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = rect.width / scene.W;
+  const el = document.createElement('div');
+  el.className = 'toast-cash';
+  el.textContent = '+' + fmt(price);
+  el.style.left = (rect.left + sceneX*scaleX) + 'px';
+  el.style.top = (rect.top + 40) + 'px';
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(), 1000);
+}
+
+function evalOption(c, key){
+  const r = key==='2' ? game.recipe2 : game.recipe;
+  const price = key==='2' ? game.price2 : game.price;
+  const cg = grams.strength(r.strength), mm = grams.milk(r.milk), sg = grams.sugar(r.sugar);
+  const stockOK = game.stock.cups>=1 && game.stock.lids>=1 && game.stock.coffee>=cg && game.stock.milk>=mm && game.stock.sugar>=sg;
+
+  const totalDiff = Math.abs(r.strength-c.prefStrength) + Math.abs(r.milk-c.prefMilk) + Math.abs(r.sugar-c.prefSugar);
+  const tolerance = 1 + game.loyalty/45;
+  let taste;
+  if(totalDiff<=tolerance) taste='perfect';
+  else if(totalDiff<=tolerance+2.5) taste='ok';
+  else taste='bad';
+
+  const loyaltyFactor = 1 + game.loyalty/400;
+  const weekendFactor = game.isWeekend ? 1.1 : 1;
+  const tasteFactor = taste==='perfect' ? 1.15 : taste==='ok' ? 1.0 : 0.85;
+  const priceTolerance = c.maxPrice * loyaltyFactor * weekendFactor * tasteFactor;
+  const priceOK = price <= priceTolerance*1.1;
+  const tasteWalksAnyway = taste==='bad' && Math.random()<0.6;
+
+  const passes = stockOK && priceOK && !tasteWalksAnyway;
+  const score = (taste==='perfect'?2:taste==='ok'?1:0) - price*0.02;
+
+  return { key, r, price, cg, mm, sg, stockOK, priceOK, taste, passes, score };
+}
+
+function evaluateCustomer(c){
+  const keys = game.secondRecipeUnlocked ? ['1','2'] : ['1'];
+  const options = keys.map(k=>evalOption(c,k));
+  const passing = options.filter(o=>o.passes);
+
+  if(passing.length>0){
+    passing.sort((a,b)=>b.score-a.score);
+    const chosen = passing[0];
+    game.stock.cups -= 1; game.stock.lids -= 1;
+    game.stock.coffee -= chosen.cg; game.stock.milk -= chosen.mm; game.stock.sugar -= chosen.sg;
+    game.cash += chosen.price;
+    const cpc = costPerCup(chosen.key);
+    game.dayStats.sold++; game.dayStats.revenue += chosen.price; game.dayStats.cogs += cpc;
+    if(chosen.key==='2'){ game.dayStats.sold2++; game.dayStats.revenue2 += chosen.price; }
+    else { game.dayStats.sold1++; game.dayStats.revenue1 += chosen.price; }
+    game.totals.sold++; game.totals.revenue += chosen.price; game.totals.cogs += cpc;
+
+    let line;
+    if(chosen.taste==='perfect'){
+      game.loyalty = clamp(game.loyalty + 0.6, 0, 100);
+      line = pick(["Perfect cup! ☕✨","Just right, thank you!","This is my new favorite.","Nailed it!"]);
+    } else if(chosen.taste==='ok'){
+      game.loyalty = clamp(game.loyalty + 0.05, 0, 100);
+      line = pick(["Decent, I'll take it.","Bit weak, but okay.","Could be sweeter, still good.","A little too milky, but fine."]);
+    } else {
+      game.loyalty = clamp(game.loyalty - 0.05, 0, 100);
+      line = pick(["Not really my thing, but I needed caffeine.","Meh, it'll do.","Not what I hoped, oh well."]);
+    }
+    renderTopbar();
+    const brewTag = game.secondRecipeUnlocked ? ` (Brew ${chosen.key})` : '';
+    return {outcome:'sale', taste:chosen.taste, price:chosen.price, brew:chosen.key, line: line + brewTag};
+  }
+
+  // Nobody passed — figure out the dominant reason
+  const anyStock = options.some(o=>o.stockOK);
+  if(!anyStock){
+    game.dayStats.missedStock++;
+    return {outcome:'no_stock', reason:'stock', line: pick(["No cups left — walked off.","Out of milk — missed sale.","Ran short on stock, sorry!","Sold out of something — turned away."])};
+  }
+  const anyBadTaste = options.some(o=>o.stockOK && o.taste==='bad');
+  const anyPriceFail = options.some(o=>o.stockOK && !o.priceOK);
+  if(anyBadTaste && (!anyPriceFail || Math.random()<0.5)){
+    game.dayStats.missedTaste++;
+    game.loyalty = clamp(game.loyalty - 0.08, 0, 100);
+    return {outcome:'declined', reason:'taste', line: pick(["Not for me, taste's off.","Hmm, not my kind of brew.","Too weird a mix, skipping.","Nah, not today."])};
+  }
+  game.dayStats.missedPrice++;
+  game.loyalty = clamp(game.loyalty - 0.12, 0, 100);
+  return {outcome:'declined', reason:'price', line: pick(["Whoa, too pricey for me.","That's steep — I'll pass.","Not paying that today.","Ouch, bit much."])};
+}
+
+function logMini(result){
+  const div = document.createElement('div');
+  const cls = result.outcome==='sale' ? (result.taste==='perfect'?'good':'') : 'bad';
+  div.className = cls;
+  const tag = result.outcome==='sale' ? `Sold ${fmt(result.price)}` : (result.outcome==='no_stock' ? 'Turned away (no stock)' : `Declined (${result.reason})`);
+  div.textContent = `${tag} — "${result.line}"`;
+  $('miniLog').prepend(div);
+}
+
+function updateTrio(){
+  $('triBought').textContent = game.dayStats.sold;
+  $('triDeclined').textContent = game.dayStats.missedPrice + game.dayStats.missedTaste;
+  $('triNoStock').textContent = game.dayStats.missedStock;
+}
+
+function updateCupGauge(sold){
+  const target = Math.max(8, (scene ? scene.queue.length + scene.active.length : 0) + sold);
+  const pct = clamp(sold/Math.max(target,1),0,1);
+  const liquid = $('cupLiquid');
+  const h = 61*pct;
+  liquid.setAttribute('y', 71-h);
+  liquid.setAttribute('height', h);
+  $('cupGaugeLabel').textContent = `${sold} sold`;
+}
+
+function updateLiveStats(){
+  $('liveRevenue').textContent = fmt(game.dayStats.revenue);
+  $('liveCupsLeft').textContent = game.stock.cups;
+  $('liveMilkLeft').textContent = game.stock.milk + ' ml';
+  $('liveCoffeeLeft').textContent = game.stock.coffee + ' g';
+  $('liveSugarLeft').textContent = game.stock.sugar + ' g';
+  $('statCash').textContent = fmt(game.cash);
+  updateTrio();
+}
+
+/* ---------------- END OF DAY ---------------- */
+function endService(){
+  const spoil = overnightSpoilage();
+  game.history.push({
+    day: game.day, dayName: game.dayName, isWeekend: game.isWeekend,
+    profit: game.dayStats.revenue - game.dayStats.cogs,
+    revenue: game.dayStats.revenue, cogs: game.dayStats.cogs,
+    loyalty: game.loyalty, sold: game.dayStats.sold,
+    missedStock: game.dayStats.missedStock, missedPrice: game.dayStats.missedPrice, missedTaste: game.dayStats.missedTaste,
+  });
+  showDebrief(spoil);
+}
+
+function overnightSpoilage(){
+  const w = game.weather;
+  const milkPct = clamp(0.12 + (w.tempC>26?0.18:w.tempC>20?0.08:0) + Math.random()*0.07, 0, 0.95);
+  let milkLost = Math.floor(game.stock.milk*milkPct);
+  let fridgeEvent = false;
+  if(Math.random()<0.10 && game.stock.milk>0){
+    const extra = Math.floor(game.stock.milk*(0.15+Math.random()*0.15));
+    milkLost += extra; fridgeEvent = true;
+  }
+  game.stock.milk = Math.max(0, game.stock.milk - milkLost);
+
+  const coffeeBasePct = 0.015 + Math.random()*0.015;
+  let coffeeLost = Math.floor(game.stock.coffee*coffeeBasePct);
+  let moldEvent = false;
+  if(Math.random()<0.12 && game.stock.coffee>0){
+    const extra = Math.floor(game.stock.coffee*(0.2+Math.random()*0.25));
+    coffeeLost += extra; moldEvent = true;
+  }
+  game.stock.coffee = Math.max(0, game.stock.coffee - coffeeLost);
+
+  let sugarLost = 0, antsEvent = false;
+  if(Math.random()<0.15 && game.stock.sugar>0){
+    sugarLost = Math.floor(game.stock.sugar*(0.3+Math.random()*0.4));
+    game.stock.sugar -= sugarLost; antsEvent = true;
+  }
+
+  return {milkLost, coffeeLost, sugarLost, fridgeEvent, moldEvent, antsEvent};
+}
+
+/* ---------------- CHARTS (inline SVG) ---------------- */
+function svgOutcomesBar(ds){
+  const bars = [
+    {label:'Sold', value:ds.sold, color:'#8fa888'},
+    {label:'Price', value:ds.missedPrice, color:'#e3a868'},
+    {label:'Taste', value:ds.missedTaste, color:'#d1594a'},
+    {label:'Stock', value:ds.missedStock, color:'#6a5a48'},
+  ];
+  const w=520,h=130, padB=20, padT=10, barGap=18;
+  const max = Math.max(1, ...bars.map(b=>b.value));
+  const barW = (w - barGap*(bars.length+1)) / bars.length;
+  let svg = `<svg viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg">`;
+  bars.forEach((b,i)=>{
+    const bh = (h-padT-padB) * (b.value/max);
+    const x = barGap + i*(barW+barGap);
+    const y = h-padB-bh;
+    svg += `<rect x="${x}" y="${y}" width="${barW}" height="${bh}" rx="4" fill="${b.color}"/>`;
+    svg += `<text x="${x+barW/2}" y="${h-padB+13}" text-anchor="middle" font-size="10" fill="#cbb99e" font-family="DM Sans, sans-serif">${b.label}</text>`;
+    svg += `<text x="${x+barW/2}" y="${y-5}" text-anchor="middle" font-size="11" fill="#f1e4cf" font-family="JetBrains Mono, monospace" font-weight="600">${b.value}</text>`;
+  });
+  svg += `</svg>`;
+  return svg;
+}
+
+function svgTrendLine(points, color, label, fmtFn){
+  const w=520,h=110, padL=34,padR=10,padT=14,padB=22;
+  const vals = points.map(p=>p.y);
+  let min = Math.min(...vals), max = Math.max(...vals);
+  if(min===max){ min -= 1; max += 1; }
+  const xForI = i => padL + (points.length===1 ? 0 : (i/(points.length-1)) * (w-padL-padR));
+  const yForV = v => padT + (h-padT-padB) * (1 - (v-min)/(max-min));
+
+  let path = '';
+  points.forEach((p,i)=>{
+    const x = xForI(i), y = yForV(p.y);
+    path += (i===0?'M':'L') + x.toFixed(1) + ' ' + y.toFixed(1) + ' ';
+  });
+
+  let areaPath = path + `L ${xForI(points.length-1).toFixed(1)} ${(h-padB).toFixed(1)} L ${xForI(0).toFixed(1)} ${(h-padB).toFixed(1)} Z`;
+
+  let svg = `<svg viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg">`;
+  svg += `<line x1="${padL}" y1="${h-padB}" x2="${w-padR}" y2="${h-padB}" stroke="#4a3a29" stroke-width="1"/>`;
+  svg += `<path d="${areaPath}" fill="${color}" opacity="0.14"/>`;
+  svg += `<path d="${path.trim()}" fill="none" stroke="${color}" stroke-width="2.2"/>`;
+  points.forEach((p,i)=>{
+    const x = xForI(i), y = yForV(p.y);
+    svg += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3" fill="${color}"/>`;
+    svg += `<text x="${x.toFixed(1)}" y="${h-6}" text-anchor="middle" font-size="9" fill="#cbb99e" font-family="DM Sans, sans-serif">D${p.x}</text>`;
+  });
+  const lastVal = points[points.length-1].y;
+  svg += `<text x="${w-padR}" y="${padT}" text-anchor="end" font-size="11" fill="${color}" font-family="JetBrains Mono, monospace" font-weight="600">${fmtFn ? fmtFn(lastVal) : lastVal}</text>`;
+  svg += `</svg>`;
+  return svg;
+}
+
+function renderCharts(){
+  $('chartOutcomes').innerHTML = svgOutcomesBar(game.dayStats);
+
+  const hist = game.history;
+  if(hist.length >= 2){
+    const profitPts = hist.map(h=>({x:h.day, y:+h.profit.toFixed(2)}));
+    const loyaltyPts = hist.map(h=>({x:h.day, y:+h.loyalty.toFixed(1)}));
+    $('chartTrendWrap').innerHTML = `
+      <div class="chart-box">
+        <div class="chart-title"><span><span class="legend-dot" style="background:#e8b94a"></span>Profit per Day</span></div>
+        ${svgTrendLine(profitPts, '#e8b94a', 'Profit', v=>'$'+v.toFixed(2))}
+      </div>
+      <div class="chart-box">
+        <div class="chart-title"><span><span class="legend-dot" style="background:#8fa888"></span>Loyalty over Time</span></div>
+        ${svgTrendLine(loyaltyPts, '#8fa888', 'Loyalty', v=>Math.round(v))}
+      </div>
+    `;
+  } else {
+    $('chartTrendWrap').innerHTML = `<div class="chart-box"><div class="chart-title"><span>Profit &amp; Loyalty Trend</span></div><p style="font-size:11.5px; color:var(--cream-dim); margin:0;">Trend charts appear from Day 2 onward.</p></div>`;
+  }
+}
+
+function showDebrief(spoil){
+  const ds = game.dayStats;
+  const profit = ds.revenue - ds.cogs;
+  const loyaltyDelta = game.loyalty - ds.loyaltyStart;
+
+  $('debriefTitle').textContent = `Day ${game.day} Debrief`;
+  $('debriefSub').textContent = `${game.dayName}${game.isWeekend?' · Weekend':''} · ${game.weather.icon} ${game.weather.name}, ${game.weather.tempC}°C · ${game.dayMix.dominant.label} crowd`;
+
+  let gridHtml = `
+    <div class="debrief-item"><div class="dl">Cups sold</div><div class="dv">${ds.sold}${game.secondRecipeUnlocked ? ` <span style="font-size:11px;color:var(--cream-dim);">(${ds.sold1}/${ds.sold2})</span>` : ''}</div></div>
+    <div class="debrief-item"><div class="dl">Revenue</div><div class="dv gold">${fmt(ds.revenue)}</div></div>
+    <div class="debrief-item"><div class="dl">Ingredient cost</div><div class="dv">${fmt(ds.cogs)}</div></div>
+    <div class="debrief-item"><div class="dl">Day profit</div><div class="dv ${profit>=0?'pos':'neg'}">${profit>=0?'+':''}${fmt(profit)}</div></div>
+    <div class="debrief-item"><div class="dl">Missed sales</div><div class="dv neg">${ds.missedStock+ds.missedPrice+ds.missedTaste}</div></div>
+    <div class="debrief-item"><div class="dl">Loyalty change</div><div class="dv ${loyaltyDelta>=0?'pos':'neg'}">${loyaltyDelta>=0?'+':''}${loyaltyDelta.toFixed(1)}</div></div>
+  `;
+  $('debriefGrid').innerHTML = gridHtml;
+
+  renderCharts();
+
+  let events = '';
+  if(spoil.milkLost>0) events += `<div class="event-note warn"><div class="ei">🥛</div><div>${spoil.milkLost}ml of milk spoiled overnight${spoil.fridgeEvent ? ' — the fridge glitched too' : ''}.</div></div>`;
+  if(spoil.moldEvent) events += `<div class="event-note warn"><div class="ei">🦠</div><div>A batch of coffee turned — lost ${spoil.coffeeLost}g total to mold and staleness.</div></div>`;
+  else if(spoil.coffeeLost>0) events += `<div class="event-note"><div class="ei">🌰</div><div>${spoil.coffeeLost}g of coffee lost a little freshness.</div></div>`;
+  if(spoil.antsEvent) events += `<div class="event-note warn"><div class="ei">🐜</div><div>Ants got into the sugar overnight — lost ${spoil.sugarLost}g.</div></div>`;
+  if(ds.missedStock>0) events += `<div class="event-note warn"><div class="ei">📦</div><div>${ds.missedStock} customers turned away — you ran short on stock.</div></div>`;
+  if(ds.missedPrice>0) events += `<div class="event-note"><div class="ei">💸</div><div>${ds.missedPrice} customers walked over price.</div></div>`;
+  if(ds.missedTaste>0) events += `<div class="event-note"><div class="ei">👅</div><div>${ds.missedTaste} customers weren't into the recipe today.</div></div>`;
+  if(!game.secondRecipeUnlocked && game.loyalty >= UNLOCK_LOYALTY) events += `<div class="event-note good"><div class="ei">🎉</div><div>Loyalty has crossed ${UNLOCK_LOYALTY} — you can unlock a second brew tomorrow morning.</div></div>`;
+  if(game.cash < 2) events += `<div class="event-note warn"><div class="ei">⚠️</div><div>Cash is razor-thin. One bad day could end the run.</div></div>`;
+  $('debriefEvents').innerHTML = events;
+
+  $('nextDayBtn').textContent = game.day >= game.durationDays ? 'See Final Results →' : 'Next Day →';
+  $('debriefModal').classList.remove('hidden');
+}
+
+$('nextDayBtn').addEventListener('click', ()=>{
+  $('debriefModal').classList.add('hidden');
+  if(game.day >= game.durationDays){
+    showGameOver(false);
+  } else {
+    game.day += 1;
+    beginDay();
+  }
+});
+
+/* ---------------- GAME OVER ---------------- */
+function showGameOver(bankrupt){
+  const t = game.totals;
+  const netProfit = game.cash - STARTING_CASH;
+  const roi = STARTING_CASH>0 ? (netProfit/STARTING_CASH)*100 : 0;
+
+  let grade, title;
+  if(bankrupt){ grade='F'; title='Bankrupt Barista'; }
+  else if(roi>=120 && game.loyalty>=60){ grade='S'; title='Certified Bean Baron'; }
+  else if(roi>=70){ grade='A'; title='Espresso Mogul'; }
+  else if(roi>=30){ grade='B'; title='Steady Steeper'; }
+  else if(roi>=0){ grade='C'; title='Broke Even, Barely'; }
+  else if(roi>=-30){ grade='D'; title='Grounds for Concern'; }
+  else { grade='F'; title='Bankrupt Barista'; }
+
+  $('goGrade').textContent = grade;
+  $('goTitle').textContent = title;
+  $('goSub').textContent = bankrupt
+    ? `${game.cartName} ran out of cash and stock on Day ${game.day} — the cart closed for good.`
+    : `${game.cartName} ran ${game.durationDays} days. Final loyalty: ${Math.round(game.loyalty)}/100.`;
+  $('goGrid').innerHTML = `
+    <div class="debrief-item"><div class="dl">Final cash</div><div class="dv gold">${fmt(Math.max(0,game.cash))}</div></div>
+    <div class="debrief-item"><div class="dl">Net profit</div><div class="dv ${netProfit>=0?'pos':'neg'}">${netProfit>=0?'+':''}${fmt(netProfit)}</div></div>
+    <div class="debrief-item"><div class="dl">Total cups sold</div><div class="dv">${t.sold}</div></div>
+    <div class="debrief-item"><div class="dl">Total revenue</div><div class="dv">${fmt(t.revenue)}</div></div>
+    <div class="debrief-item"><div class="dl">ROI</div><div class="dv ${roi>=0?'pos':'neg'}">${roi.toFixed(0)}%</div></div>
+    <div class="debrief-item"><div class="dl">Final loyalty</div><div class="dv">${Math.round(game.loyalty)}/100</div></div>
+  `;
+  $('debriefModal').classList.add('hidden');
+  $('gameoverModal').classList.remove('hidden');
+}
+
+$('restartBtn').addEventListener('click', ()=>{
+  $('gameoverModal').classList.add('hidden');
+  $('topbar').classList.add('hidden');
+  document.querySelectorAll('#durationChoices .choice-btn').forEach(b=>b.classList.remove('selected'));
+  $('startGameBtn').disabled = true;
+  $('startGameBtn').textContent = 'Pick a run length to begin';
+  $('cartNameInput').value = '';
+  chosenDays = null;
+  $('screen-setup').classList.remove('hidden');
+});
+
+})();
+</script>
+</body>
+</html>
