@@ -83,8 +83,13 @@ button:focus-visible, input:focus-visible, [tabindex]:focus-visible{ outline:2px
 .secondary-btn:hover{border-color:var(--copper-light);}
 .secondary-btn:disabled{opacity:.4; cursor:not-allowed;}
 
-.prep-grid{display:grid; grid-template-columns:1.05fr 1fr 1fr; gap:16px;}
-@media(max-width:960px){.prep-grid{grid-template-columns:1fr;}}
+.forecast-card{margin-bottom:16px;}
+.tab-bar{display:flex; gap:6px; margin-bottom:16px; background:var(--bg-panel-2); border:1px solid var(--line); border-radius:12px; padding:5px;}
+.tab-btn{flex:1; padding:11px 10px; border:none; background:transparent; color:var(--cream-dim); border-radius:8px; font-size:13.5px; font-weight:600; font-family:var(--font-body); transition:.15s;}
+.tab-btn.active{background:linear-gradient(180deg, var(--copper-light), var(--copper)); color:#241205;}
+.tab-btn:not(.active):hover{color:var(--cream); background:rgba(255,255,255,0.04);}
+.tab-panel{display:flex; flex-direction:column; gap:16px; max-width:620px; margin:0 auto;}
+.bottleneck-note{font-size:11.5px; color:var(--copper-light); margin:6px 0 0; font-style:italic;}
 .panel{background:var(--bg-panel); border:1px solid var(--line); border-radius:16px; padding:20px;}
 .panel-title{font-family:var(--font-display); font-size:20px; margin:0 0 4px; color:var(--copper-light); display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
 .panel-sub{font-size:12px; color:var(--cream-dim); margin:0 0 16px;}
@@ -303,7 +308,7 @@ canvas#sceneCanvas{width:100%; height:auto; display:block; border-radius:10px; b
             <div class="cb-sub">Long haul, slower ramp-up</div>
           </button>
         </div>
-        <div class="budget-note">Every run starts with <b>£15.00</b> — regardless of length. Storage space is fixed too and never grows, so even once you're cash-rich later on you can't just buy your way to full coverage — demand keeps growing as the run goes on. Each day's profit funds the next day's stock.</div>
+        <div class="budget-note">Every run starts with <b>£10.00</b>, minus a <b>£2.00 pitch fee charged every morning</b> before you buy anything — that's a fixed cost regardless of how the day goes. Storage space is fixed too and never grows. Turning some customers away on day one is normal, not a failure. Each day's profit funds the next day's stock and fee.</div>
       </div>
 
       <button id="startGameBtn" class="primary-btn" disabled>Pick a run length to begin</button>
@@ -312,16 +317,32 @@ canvas#sceneCanvas{width:100%; height:auto; display:block; border-radius:10px; b
 
   <!-- PREP -->
   <div id="screen-prep" class="screen hidden">
-    <div class="prep-grid" id="prepGrid">
 
-      <div id="unlockBanner" class="unlock-banner hidden">
-        <div class="ub-text">
-          <p class="ub-title">🎉 Loyalty milestone reached</p>
-          <p class="ub-sub" id="unlockSub">Your regulars trust you now. Add a second brew to the menu and serve two different crowds at once.</p>
-        </div>
-        <button id="unlockBtn" class="primary-btn" style="width:auto;">Unlock Second Brew — £8.00</button>
+    <div id="unlockBanner" class="unlock-banner hidden" style="margin-bottom:16px;">
+      <div class="ub-text">
+        <p class="ub-title">🎉 Loyalty milestone reached</p>
+        <p class="ub-sub" id="unlockSub">Your regulars trust you now. Add a second brew to the menu and serve two different crowds at once.</p>
       </div>
+      <button id="unlockBtn" class="primary-btn" style="width:auto;">Unlock Second Brew — £8.00</button>
+    </div>
 
+    <div class="panel forecast-card">
+      <h2 class="panel-title" id="forecastTitle">🌦️ Forecast</h2>
+      <p class="panel-sub" style="margin-bottom:8px;" id="forecastBlurb">—</p>
+      <div class="segment-hint" id="segmentHint">—</div>
+      <div class="footfall-note" id="footfallNote">—</div>
+      <div class="footfall-note" id="revenueNote" style="border-left-color:var(--gold); color:var(--gold);">—</div>
+      <div class="footfall-note" id="rushRiskNote" style="border-left-color:var(--copper-light); color:var(--copper-light);">—</div>
+      <div class="footfall-note" id="spoilRiskNote" style="border-left-color:var(--red-light); color:var(--red-light);">—</div>
+    </div>
+
+    <div class="tab-bar" id="prepTabBar">
+      <button class="tab-btn active" data-tab="recipe">☕ Recipe</button>
+      <button class="tab-btn" data-tab="order">🛒 Order</button>
+      <button class="tab-btn" data-tab="stock">📦 Stock</button>
+    </div>
+
+    <div class="tab-panel" id="tab-recipe">
       <div class="panel">
         <h2 class="panel-title">☕ Brew 1</h2>
         <p class="panel-sub">Strength, milk and sugar all share one fixed 200ml cup — more of one leaves less room for another.</p>
@@ -342,51 +363,13 @@ canvas#sceneCanvas{width:100%; height:auto; display:block; border-radius:10px; b
         <div class="cup-breakdown" id="cupBreakdown">—</div>
         <div class="cost-line"><span>Est. cost / cup</span><b id="costPerCup">£0.00</b></div>
         <div class="cost-caveat">Blended from what's already in stock — new purchases at today's prices will shift this.</div>
-      </div>
 
-      <div class="panel">
-        <h2 class="panel-title">💵 Price — Brew 1</h2>
-        <div class="price-display" id="priceDisplayPrep">£2.50</div>
-        <input type="range" min="1.00" max="6.00" step="0.10" value="2.50" id="rPrice">
-        <div class="margin-tag" id="marginTag">est. margin: £0.00 / cup</div>
-        <div class="market-ref">Typical price nearby today: <b id="marketRef">£0.00</b></div>
-
-        <div style="margin-top:18px;">
-          <h2 class="panel-title" style="font-size:17px;" id="forecastTitle">🌦️ Forecast</h2>
-          <p class="panel-sub" style="margin-bottom:8px;" id="forecastBlurb">—</p>
-          <div class="segment-hint" id="segmentHint">—</div>
-          <div class="footfall-note" id="footfallNote">—</div>
-        </div>
-
-        <button id="openCartBtn" class="primary-btn" style="margin-top:16px;">Open the Cart →</button>
-      </div>
-
-      <div class="panel">
-        <h2 class="panel-title">📦 Stock &amp; Buy</h2>
-        <p class="panel-sub">Cart storage is limited — you can't stockpile forever.</p>
-
-        <div class="stock-list" id="currentStockList"></div>
-        <div class="makeable-line"><span>Cups you can make right now (Brew 1 recipe)</span><span class="mkv" id="makeableNow">0</span></div>
-        <div class="makeable-line"><span>Cups you'll be able to make if you buy this order</span><span class="mkv" id="makeableAfter">0</span></div>
-
-        <div style="margin-top:16px; padding-top:14px; border-top:1px dashed var(--line);">
-          <p class="market-note" id="marketNote">Today's market rates — these shift daily.</p>
-          <div class="buy-row"><div class="bicon">🥤</div><div><div class="bname">Cups</div><div class="bprice" id="p_cup"></div></div><div class="stepper"><button type="button" class="stepBtn" data-target="buy_cup" data-dir="-1" aria-label="Decrease cups">−</button><input type="number" min="0" step="5" id="buy_cup" value="0"><button type="button" class="stepBtn" data-target="buy_cup" data-dir="1" aria-label="Increase cups">+</button></div></div>
-          <div class="buy-row"><div class="bicon">🎯</div><div><div class="bname">Lids</div><div class="bprice" id="p_lid"></div></div><div class="stepper"><button type="button" class="stepBtn" data-target="buy_lid" data-dir="-1" aria-label="Decrease lids">−</button><input type="number" min="0" step="5" id="buy_lid" value="0"><button type="button" class="stepBtn" data-target="buy_lid" data-dir="1" aria-label="Increase lids">+</button></div></div>
-          <div class="buy-row"><div class="bicon">🌰</div><div><div class="bname">Coffee (g)</div><div class="bprice" id="p_coffee"></div></div><div class="stepper"><button type="button" class="stepBtn" data-target="buy_coffee" data-dir="-1" aria-label="Decrease coffee">−</button><input type="number" min="0" step="20" id="buy_coffee" value="0"><button type="button" class="stepBtn" data-target="buy_coffee" data-dir="1" aria-label="Increase coffee">+</button></div></div>
-          <div class="buy-row"><div class="bicon">🥛</div><div><div class="bname">Milk (ml)</div><div class="bprice" id="p_milk"></div></div><div class="stepper"><button type="button" class="stepBtn" data-target="buy_milk" data-dir="-1" aria-label="Decrease milk">−</button><input type="number" min="0" step="50" id="buy_milk" value="0"><button type="button" class="stepBtn" data-target="buy_milk" data-dir="1" aria-label="Increase milk">+</button></div></div>
-          <div class="buy-row"><div class="bicon">🍬</div><div><div class="bname">Sugar (g)</div><div class="bprice" id="p_sugar"></div></div><div class="stepper"><button type="button" class="stepBtn" data-target="buy_sugar" data-dir="-1" aria-label="Decrease sugar">−</button><input type="number" min="0" step="20" id="buy_sugar" value="0"><button type="button" class="stepBtn" data-target="buy_sugar" data-dir="1" aria-label="Increase sugar">+</button></div></div>
-          <p class="cap-note" id="capNote">Storage cap: —</p>
-
-          <div class="buy-summary">
-            <div class="buy-summary-row"><span class="bl">Cash now</span><b id="buyCashNow">£0.00</b></div>
-            <div class="buy-summary-row"><span class="bl">Order total</span><b id="buyTotal">£0.00</b></div>
-            <div class="buy-remaining">
-              <span class="bl">Left if you buy this</span>
-              <span class="brv" id="buyRemaining">£0.00</span>
-            </div>
-          </div>
-          <button id="buyBtn" class="secondary-btn" style="width:100%; margin-top:10px;">Add to Stock</button>
+        <div style="margin-top:18px; padding-top:16px; border-top:1px dashed var(--line);">
+          <div class="slider-top"><span class="sname">Price — Brew 1</span></div>
+          <div class="price-display" id="priceDisplayPrep">£3.20</div>
+          <input type="range" min="1.00" max="7.00" step="0.10" value="3.20" id="rPrice">
+          <div class="margin-tag" id="marginTag">est. margin: £0.00 / cup</div>
+          <div class="market-ref">Typical price nearby today: <b id="marketRef">£0.00</b></div>
         </div>
       </div>
 
@@ -411,12 +394,53 @@ canvas#sceneCanvas{width:100%; height:auto; display:block; border-radius:10px; b
 
         <div style="margin-top:16px; padding-top:16px; border-top:1px dashed var(--line);">
           <div class="slider-top"><span class="sname">Price — Brew 2</span></div>
-          <div class="price-display small" id="priceDisplayPrep2">£2.50</div>
-          <input type="range" min="1.00" max="6.00" step="0.10" value="2.50" id="rPrice2">
+          <div class="price-display small" id="priceDisplayPrep2">£3.20</div>
+          <input type="range" min="1.00" max="7.00" step="0.10" value="3.20" id="rPrice2">
           <div class="margin-tag" id="marginTag2">est. margin: £0.00 / cup</div>
         </div>
       </div>
     </div>
+
+    <div class="tab-panel hidden" id="tab-order">
+      <div class="panel">
+        <h2 class="panel-title">🛒 Order</h2>
+        <p class="panel-sub" id="marketNote">Today's market rates — these shift daily.</p>
+
+        <div class="makeable-line"><span>Cups you can make right now (Brew 1 recipe)</span><span class="mkv" id="makeableNow">0</span></div>
+        <div class="makeable-line"><span>Cups you'll be able to make if you buy this order</span><span class="mkv" id="makeableAfter">0</span></div>
+        <p class="bottleneck-note" id="bottleneckNote">—</p>
+        <p class="bottleneck-note" id="breakEvenNote">—</p>
+
+        <div style="margin-top:14px; padding-top:14px; border-top:1px dashed var(--line);">
+          <div class="buy-row"><div class="bicon">🥤</div><div><div class="bname">Cups</div><div class="bprice" id="p_cup"></div></div><div class="stepper"><button type="button" class="stepBtn" data-target="buy_cup" data-dir="-1" aria-label="Decrease cups">−</button><input type="number" min="0" step="5" id="buy_cup" value="0"><button type="button" class="stepBtn" data-target="buy_cup" data-dir="1" aria-label="Increase cups">+</button></div></div>
+          <div class="buy-row"><div class="bicon">🎯</div><div><div class="bname">Lids</div><div class="bprice" id="p_lid"></div></div><div class="stepper"><button type="button" class="stepBtn" data-target="buy_lid" data-dir="-1" aria-label="Decrease lids">−</button><input type="number" min="0" step="5" id="buy_lid" value="0"><button type="button" class="stepBtn" data-target="buy_lid" data-dir="1" aria-label="Increase lids">+</button></div></div>
+          <div class="buy-row"><div class="bicon">🌰</div><div><div class="bname">Coffee (g)</div><div class="bprice" id="p_coffee"></div></div><div class="stepper"><button type="button" class="stepBtn" data-target="buy_coffee" data-dir="-1" aria-label="Decrease coffee">−</button><input type="number" min="0" step="20" id="buy_coffee" value="0"><button type="button" class="stepBtn" data-target="buy_coffee" data-dir="1" aria-label="Increase coffee">+</button></div></div>
+          <div class="buy-row"><div class="bicon">🥛</div><div><div class="bname">Milk (ml)</div><div class="bprice" id="p_milk"></div></div><div class="stepper"><button type="button" class="stepBtn" data-target="buy_milk" data-dir="-1" aria-label="Decrease milk">−</button><input type="number" min="0" step="50" id="buy_milk" value="0"><button type="button" class="stepBtn" data-target="buy_milk" data-dir="1" aria-label="Increase milk">+</button></div></div>
+          <div class="buy-row"><div class="bicon">🍬</div><div><div class="bname">Sugar (g)</div><div class="bprice" id="p_sugar"></div></div><div class="stepper"><button type="button" class="stepBtn" data-target="buy_sugar" data-dir="-1" aria-label="Decrease sugar">−</button><input type="number" min="0" step="20" id="buy_sugar" value="0"><button type="button" class="stepBtn" data-target="buy_sugar" data-dir="1" aria-label="Increase sugar">+</button></div></div>
+          <p class="cap-note" id="capNote">Storage cap: —</p>
+
+          <div class="buy-summary">
+            <div class="buy-summary-row"><span class="bl">Cash now</span><b id="buyCashNow">£0.00</b></div>
+            <div class="buy-summary-row"><span class="bl">Order total</span><b id="buyTotal">£0.00</b></div>
+            <div class="buy-remaining">
+              <span class="bl">Left if you buy this</span>
+              <span class="brv" id="buyRemaining">£0.00</span>
+            </div>
+          </div>
+          <button id="buyBtn" class="secondary-btn" style="width:100%; margin-top:10px;">Add to Stock</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-panel hidden" id="tab-stock">
+      <div class="panel">
+        <h2 class="panel-title">📦 Current Stock</h2>
+        <p class="panel-sub">Cart storage is limited — you can't stockpile forever.</p>
+        <div class="stock-list" id="currentStockList"></div>
+      </div>
+    </div>
+
+    <button id="openCartBtn" class="primary-btn" style="margin-top:16px;">Open the Cart →</button>
   </div>
 
   <!-- SERVICE -->
@@ -457,8 +481,8 @@ canvas#sceneCanvas{width:100%; height:auto; display:block; border-radius:10px; b
         <div class="live-price-block">
           <div class="lp-label">Brew 1</div>
           <div class="live-price-row">
-            <div class="price-display" id="livePriceDisplay">£2.50</div>
-            <input type="range" min="1.00" max="6.00" step="0.10" value="2.50" id="rLivePrice" style="flex:1;">
+            <div class="price-display" id="livePriceDisplay">£3.20</div>
+            <input type="range" min="1.00" max="7.00" step="0.10" value="3.20" id="rLivePrice" style="flex:1;">
           </div>
           <div class="margin-tag" id="liveMarginTag" style="text-align:left; margin-top:6px;">margin —</div>
         </div>
@@ -466,8 +490,8 @@ canvas#sceneCanvas{width:100%; height:auto; display:block; border-radius:10px; b
         <div class="live-price-block hidden" id="livePrice2Block">
           <div class="lp-label">Brew 2</div>
           <div class="live-price-row">
-            <div class="price-display" id="livePriceDisplay2">£2.50</div>
-            <input type="range" min="1.00" max="6.00" step="0.10" value="2.50" id="rLivePrice2" style="flex:1;">
+            <div class="price-display" id="livePriceDisplay2">£3.20</div>
+            <input type="range" min="1.00" max="7.00" step="0.10" value="3.20" id="rLivePrice2" style="flex:1;">
           </div>
           <div class="margin-tag" id="liveMarginTag2" style="text-align:left; margin-top:6px;">margin —</div>
         </div>
@@ -548,7 +572,8 @@ canvas#sceneCanvas{width:100%; height:auto; display:block; border-radius:10px; b
 "use strict";
 
 /* ================= CONFIG ================= */
-const STARTING_CASH = 15.00;
+const STARTING_CASH = 10.00;
+const PITCH_FEE = 2.00;
 const ING_BASE = { cup:0.06, lid:0.05, coffee:0.032, milk:0.008, sugar:0.010 };
 const CUP_ML = 200;
 const BREW_RATIO = {1:0.045, 2:0.06, 3:0.075, 4:0.09, 5:0.11};
@@ -637,6 +662,17 @@ function getCaps(){
   return BASE_CAPS;
 }
 
+function marginText(price, key){
+  const m = price - costPerCup(key);
+  const pct = price>0 ? (m/price*100) : 0;
+  return `est. margin: ${fmt(m)} / cup (${pct.toFixed(0)}%)`;
+}
+function liveMarginText(price, key){
+  const m = price - costPerCup(key);
+  const pct = price>0 ? (m/price*100) : 0;
+  return `margin ${fmt(m)} (${pct.toFixed(0)}%)`;
+}
+
 function rollWeather(){
   const t = pick(WEATHER_TYPES);
   const temp = randInt(t.tempRange[0], t.tempRange[1]);
@@ -677,6 +713,18 @@ function expectedCustomerRange(){
   return { lo: Math.max(3, Math.round(mid*0.72)), hi: Math.round(mid*1.28) };
 }
 
+function rushChanceFor(count){
+  return clamp((count-20)/40, 0, 0.6);
+}
+
+function updateRevenueNote(){
+  const range = expectedCustomerRange();
+  const lo = (range.lo*game.price).toFixed(2);
+  const hi = (range.hi*game.price).toFixed(2);
+  const el = $('revenueNote');
+  if(el) el.textContent = `Expected revenue if fully stocked: £${lo}–£${hi} (${range.lo}–${range.hi} customers × £${game.price.toFixed(2)}).`;
+}
+
 /* ================= SETUP SCREEN ================= */
 document.querySelectorAll('#durationChoices .choice-btn').forEach(btn=>{
   btn.addEventListener('click', ()=>{
@@ -684,7 +732,16 @@ document.querySelectorAll('#durationChoices .choice-btn').forEach(btn=>{
     btn.classList.add('selected');
     chosenDays = parseInt(btn.dataset.days,10);
     $('startGameBtn').disabled = false;
-    $('startGameBtn').textContent = `Start the Run — ${fmt(STARTING_CASH)} to spend →`;
+    $('startGameBtn').textContent = `Start the Run — ${fmt(STARTING_CASH)} minus ${fmt(PITCH_FEE)} fee = ${fmt(STARTING_CASH-PITCH_FEE)} to spend day one →`;
+  });
+});
+
+document.querySelectorAll('#prepTabBar .tab-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('#prepTabBar .tab-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p=>p.classList.add('hidden'));
+    btn.classList.add('active');
+    $('tab-' + btn.dataset.tab).classList.remove('hidden');
   });
 });
 
@@ -703,12 +760,12 @@ function startGame(){
     stock: { cups:0, lids:0, coffee:0, milk:0, sugar:0 },
     avgCost: { coffee:0, milk:0, sugar:0 },
     recipe: { strength:3, milk:3, sugar:3 },
-    price: 2.5,
+    price: 3.2,
     secondRecipeUnlocked: false,
     recipe2: { strength:3, milk:3, sugar:3 },
-    price2: 2.5,
+    price2: 3.2,
     weather: null, rates: null, prevRates: null,
-    isWeekend: false, dayName: '', dayMix: null, marketPrice: 3.0,
+    isWeekend: false, dayName: '', dayMix: null, marketPrice: 3.2,
     totals: { revenue:0, cogs:0, sold:0, spentOnStock:0 },
     dayStats: null,
     history: [],
@@ -721,7 +778,9 @@ function startGame(){
 
 /* ================= BEGIN DAY (PREP) ================= */
 function beginDay(){
-  if(game.day > 1 && isBankrupt()){
+  game.cash -= PITCH_FEE;
+
+  if(isBankrupt()){
     showGameOver(true);
     return;
   }
@@ -732,7 +791,7 @@ function beginDay(){
 
   game.weather = rollWeather();
   game.dayMix = rollDayMix();
-  game.marketPrice = +(2.6 + Math.random()*1.1).toFixed(2);
+  game.marketPrice = +(3.0 + Math.random()*1.3).toFixed(2);
 
   game.prevRates = game.rates;
   game.rates = {
@@ -742,9 +801,10 @@ function beginDay(){
 
   game.dayStats = {
     sold:0, sold1:0, sold2:0, revenue:0, revenue1:0, revenue2:0, cogs:0,
-    missedStock:0, missedPrice:0, missedTaste:0, loyaltyStart:game.loyalty,
+    missedStock:0, missedPrice:0, missedStrength:0, missedMilk:0, missedSugar:0, loyaltyStart:game.loyalty,
     strengthMissCount:0, strengthMissSum:0, milkMissCount:0, milkMissSum:0, sugarMissCount:0, sugarMissSum:0,
-    loyaltyFromSales:0, loyaltyFromMisses:0,
+    loyaltyFromSales:0, loyaltyFromMisses:0, spentToday:PITCH_FEE,
+    rushChanceShown:0, rushMishap:null,
     buzzPool: [],
   };
 
@@ -779,6 +839,12 @@ function renderPrep(){
   $('segmentHint').textContent = game.dayMix.dominant.hint;
   const range = expectedCustomerRange();
   $('footfallNote').textContent = `Expect roughly ${range.lo}–${range.hi} customers today. Multiply by your per-cup quantities to size your order.`;
+  updateRevenueNote();
+  const rushPct = Math.round(rushChanceFor(range.hi)*100);
+  $('rushRiskNote').textContent = `Chance of a rush mishap if it gets busy: ~${rushPct}%. Big volume isn't pure upside — a chaotic rush risks spillage that eats into stock before you even notice.`;
+  const tempFactor = game.weather.tempC>26 ? 0.18 : game.weather.tempC>20 ? 0.08 : 0;
+  const milkLo = Math.round((0.12+tempFactor)*100), milkHi = Math.round((0.12+tempFactor+0.07)*100);
+  $('spoilRiskNote').textContent = `Milk spoilage risk overnight: ~${milkLo}–${milkHi}% of whatever's left unsold (plus a 1-in-10 chance of a fridge mishap adding another 15–30%). Leftover milk is the riskiest thing to over-buy.`;
   $('marketRef').textContent = fmt(game.marketPrice);
 
   if(!game.secondRecipeUnlocked && game.loyalty >= UNLOCK_LOYALTY){
@@ -794,12 +860,12 @@ function renderPrep(){
   renderRecipeSliders();
   $('rPrice').value = game.price;
   $('priceDisplayPrep').textContent = fmt(game.price);
-  $('marginTag').textContent = `est. margin: ${fmt(game.price - costPerCup('1'))} / cup`;
+  $('marginTag').textContent = marginText(game.price, '1');
 
   if(game.secondRecipeUnlocked){
     $('rPrice2').value = game.price2;
     $('priceDisplayPrep2').textContent = fmt(game.price2);
-    $('marginTag2').textContent = `est. margin: ${fmt(game.price2 - costPerCup('2'))} / cup`;
+    $('marginTag2').textContent = marginText(game.price2, '2');
   }
 
   renderCurrentStock();
@@ -845,7 +911,7 @@ function updateSliderFill(id){
     game.recipe.milk = parseInt($('rMilk').value,10);
     game.recipe.sugar = parseInt($('rSugar').value,10);
     renderRecipeSliders();
-    $('marginTag').textContent = `est. margin: ${fmt(game.price - costPerCup('1'))} / cup`;
+    $('marginTag').textContent = marginText(game.price, '1');
     renderCurrentStock();
   });
 });
@@ -853,7 +919,8 @@ function updateSliderFill(id){
 $('rPrice').addEventListener('input', ()=>{
   game.price = parseFloat($('rPrice').value);
   $('priceDisplayPrep').textContent = fmt(game.price);
-  $('marginTag').textContent = `est. margin: ${fmt(game.price - costPerCup('1'))} / cup`;
+  $('marginTag').textContent = marginText(game.price, '1');
+  updateRevenueNote();
 });
 
 ['rStrength2','rMilk2','rSugar2'].forEach(id=>{
@@ -862,7 +929,7 @@ $('rPrice').addEventListener('input', ()=>{
     game.recipe2.milk = parseInt($('rMilk2').value,10);
     game.recipe2.sugar = parseInt($('rSugar2').value,10);
     renderRecipeSliders();
-    $('marginTag2').textContent = `est. margin: ${fmt(game.price2 - costPerCup('2'))} / cup`;
+    $('marginTag2').textContent = marginText(game.price2, '2');
     renderCurrentStock();
   });
 });
@@ -870,7 +937,7 @@ $('rPrice').addEventListener('input', ()=>{
 $('rPrice2').addEventListener('input', ()=>{
   game.price2 = parseFloat($('rPrice2').value);
   $('priceDisplayPrep2').textContent = fmt(game.price2);
-  $('marginTag2').textContent = `est. margin: ${fmt(game.price2 - costPerCup('2'))} / cup`;
+  $('marginTag2').textContent = marginText(game.price2, '2');
 });
 
 $('unlockBtn').addEventListener('click', ()=>{
@@ -880,6 +947,16 @@ $('unlockBtn').addEventListener('click', ()=>{
   renderTopbar();
   renderPrep();
 });
+
+function getPendingBuyQty(){
+  return {
+    cup: parseFloat($('buy_cup').value)||0,
+    lid: parseFloat($('buy_lid').value)||0,
+    coffee: parseFloat($('buy_coffee').value)||0,
+    milk: parseFloat($('buy_milk').value)||0,
+    sugar: parseFloat($('buy_sugar').value)||0,
+  };
+}
 
 function computeMakeable(stock, recipe){
   const cb = cupBreakdown(recipe);
@@ -892,7 +969,7 @@ function computeMakeable(stock, recipe){
   return isFinite(n) ? Math.max(0,n) : 0;
 }
 
-function renderMakeable(pendingQty){
+function renderMakeable(){
   const range = expectedCustomerRange();
 
   const valNow = computeMakeable(game.stock, game.recipe);
@@ -900,7 +977,8 @@ function renderMakeable(pendingQty){
   elNow.textContent = valNow;
   elNow.className = 'mkv ' + (valNow < range.lo ? 'low' : 'ok');
 
-  const q = pendingQty || {cup:0,lid:0,coffee:0,milk:0,sugar:0};
+  const q = getPendingBuyQty();
+  const cb = cupBreakdown(game.recipe);
   const projected = {
     cups: game.stock.cups + q.cup, lids: game.stock.lids + q.lid,
     coffee: game.stock.coffee + q.coffee, milk: game.stock.milk + q.milk, sugar: game.stock.sugar + q.sugar,
@@ -909,6 +987,37 @@ function renderMakeable(pendingQty){
   const elAfter = $('makeableAfter');
   elAfter.textContent = valAfter;
   elAfter.className = 'mkv ' + (valAfter < range.lo ? 'low' : 'ok');
+
+  const perCup = {
+    cups: projected.cups, lids: projected.lids,
+    coffee: projected.coffee / Math.max(cb.coffeeGrams,1),
+    milk: projected.milk / Math.max(cb.milkMl,1),
+    sugar: cb.sugarGrams>0 ? projected.sugar / cb.sugarGrams : Infinity,
+  };
+  const bnEl = $('bottleneckNote');
+  if(bnEl){
+    let limiter = 'cups';
+    let limVal = perCup.cups;
+    ['lids','coffee','milk','sugar'].forEach(k=>{ if(perCup[k] < limVal){ limVal = perCup[k]; limiter = k; } });
+    const NAMES = {cups:'cups', lids:'lids', coffee:'coffee', milk:'milk', sugar:'sugar'};
+    bnEl.textContent = valAfter > 0 || Object.values(projected).some(v=>v>0)
+      ? `Limited by: ${NAMES[limiter]}. Add more of that to raise the count.`
+      : `Add stock below to see how many cups you'll be able to make.`;
+  }
+
+  const beEl = $('breakEvenNote');
+  if(beEl){
+    const rt = game.rates;
+    const pendingCost = q.cup*rt.cup + q.lid*rt.lid + q.coffee*rt.coffee + q.milk*rt.milk + q.sugar*rt.sugar;
+    const committed = game.dayStats.spentToday + pendingCost;
+    const margin = game.price - costPerCup('1');
+    if(margin > 0.001){
+      const beCups = Math.ceil(committed / margin);
+      beEl.textContent = `Break-even: £${committed.toFixed(2)} committed today ÷ £${margin.toFixed(2)} margin/cup = ${beCups} cups needed to cover it, out of ${valAfter} you'd be able to make.`;
+    } else {
+      beEl.textContent = `Break-even: at £${game.price.toFixed(2)} your margin is £0 or negative — no number of cups covers this. Raise price or cut cost.`;
+    }
+  }
 }
 
 function renderCurrentStock(){
@@ -970,7 +1079,7 @@ function updateBuyTotal(){
   $('buyTotal').style.color = remaining < 0 ? 'var(--red-light)' : '';
   $('buyRemaining').textContent = fmt(remaining);
   $('buyRemaining').classList.toggle('neg', remaining < 0);
-  renderMakeable(q);
+  renderMakeable();
   return {q, total};
 }
 ['buy_cup','buy_lid','buy_coffee','buy_milk','buy_sugar'].forEach(id=>{
@@ -1006,6 +1115,7 @@ $('buyBtn').addEventListener('click', ()=>{
   if(total > game.cash + 1e-9){ flashShake($('buyBtn')); return; }
   game.cash -= total;
   game.totals.spentOnStock += total;
+  game.dayStats.spentToday += total;
 
   ['coffee','milk','sugar'].forEach(ing=>{
     const bought = q[ing];
@@ -1026,8 +1136,8 @@ $('buyBtn').addEventListener('click', ()=>{
   updateBuyTotal();
   renderCurrentStock();
   renderRecipeSliders();
-  $('marginTag').textContent = `est. margin: ${fmt(game.price - costPerCup('1'))} / cup`;
-  if(game.secondRecipeUnlocked) $('marginTag2').textContent = `est. margin: ${fmt(game.price2 - costPerCup('2'))} / cup`;
+  $('marginTag').textContent = marginText(game.price, '1');
+  if(game.secondRecipeUnlocked) $('marginTag2').textContent = marginText(game.price2, '2');
   renderTopbar();
 });
 
@@ -1058,12 +1168,12 @@ function startService(){
   $('screen-service').classList.remove('hidden');
   $('rLivePrice').value = game.price;
   $('livePriceDisplay').textContent = fmt(game.price);
-  $('liveMarginTag').textContent = `margin ${fmt(game.price - costPerCup('1'))}`;
+  $('liveMarginTag').textContent = liveMarginText(game.price, '1');
   $('livePrice2Block').classList.toggle('hidden', !game.secondRecipeUnlocked);
   if(game.secondRecipeUnlocked){
     $('rLivePrice2').value = game.price2;
     $('livePriceDisplay2').textContent = fmt(game.price2);
-    $('liveMarginTag2').textContent = `margin ${fmt(game.price2 - costPerCup('2'))}`;
+    $('liveMarginTag2').textContent = liveMarginText(game.price2, '2');
   }
   $('miniLog').innerHTML = '';
   fastForward = false;
@@ -1075,26 +1185,45 @@ function startService(){
   const ctx = canvas.getContext('2d');
   const queueList = generateCustomers();
 
+  const mishap = maybeRushMishap(queueList.length);
+  game.dayStats.rushMishap = mishap;
+  if(mishap.triggered){ renderCurrentStock(); updateLiveStats(); }
+
   scene = {
     ctx, canvas, W: canvas.width, H: canvas.height,
     groundY: 168, targetX: 150,
     queue: queueList, active: [],
     lastSpawn: 0, spawnGap: 720,
-    running: true, lastFrame: 0,
+    running: true, lastFrame: 0, servingSlot: null,
   };
 
   animHandle = requestAnimationFrame(loopFrame);
 }
 
+function maybeRushMishap(actualCount){
+  const chance = rushChanceFor(actualCount);
+  if(Math.random() < chance){
+    const pct = 0.08 + Math.random()*0.10;
+    const coffeeLost = Math.floor(game.stock.coffee*pct);
+    const milkLost = Math.floor(game.stock.milk*pct);
+    const sugarLost = Math.floor(game.stock.sugar*pct);
+    game.stock.coffee = Math.max(0, game.stock.coffee - coffeeLost);
+    game.stock.milk = Math.max(0, game.stock.milk - milkLost);
+    game.stock.sugar = Math.max(0, game.stock.sugar - sugarLost);
+    return { triggered:true, coffeeLost, milkLost, sugarLost, pct, actualCount, chance };
+  }
+  return { triggered:false, actualCount, chance };
+}
+
 $('rLivePrice').addEventListener('input', ()=>{
   game.price = parseFloat($('rLivePrice').value);
   $('livePriceDisplay').textContent = fmt(game.price);
-  $('liveMarginTag').textContent = `margin ${fmt(game.price - costPerCup('1'))}`;
+  $('liveMarginTag').textContent = liveMarginText(game.price, '1');
 });
 $('rLivePrice2').addEventListener('input', ()=>{
   game.price2 = parseFloat($('rLivePrice2').value);
   $('livePriceDisplay2').textContent = fmt(game.price2);
-  $('liveMarginTag2').textContent = `margin ${fmt(game.price2 - costPerCup('2'))}`;
+  $('liveMarginTag2').textContent = liveMarginText(game.price2, '2');
 });
 
 $('skipDayBtn').addEventListener('click', ()=>{
@@ -1218,18 +1347,21 @@ function loopFrame(t){
   drawCart(ctx);
 
   const speed = (fastForward ? 9 : 1.7) * (dt/16.67);
+  const queueGap = 30;
   for(let i=scene.active.length-1;i>=0;i--){
     const o = scene.active[i];
     o.frameTimer += dt;
     if(o.frameTimer > 150){ o.frame = 1-o.frame; o.frameTimer = 0; }
 
     if(o.state==='in'){
-      o.x -= speed;
-      if(o.x <= scene.targetX){
-        o.x = scene.targetX;
-        o.state = 'wait';
-        if(!o.evaluated){
+      const isServing = scene.servingSlot === null || scene.servingSlot === o;
+      const stopX = isServing ? scene.targetX : scene.targetX + queueGap;
+      o.x = Math.max(stopX, o.x - speed);
+      if(o.x <= stopX){
+        o.x = stopX;
+        if(isServing && !o.evaluated){
           o.evaluated = true;
+          scene.servingSlot = o;
           const result = evaluateCustomer(o.c);
           o.result = result;
           o.icon = iconForResult(result);
@@ -1239,10 +1371,14 @@ function loopFrame(t){
           updateCupGauge(game.dayStats.sold);
           if(result.outcome==='sale') spawnCashToast(o.x, result.price);
         }
+        if(isServing && o.evaluated) o.state = 'wait';
       }
     } else if(o.state==='wait'){
       o.waitTimer += dt;
-      if(o.waitTimer > (fastForward ? 50 : 550)) o.state = 'out';
+      if(o.waitTimer > (fastForward ? 50 : 550)){
+        o.state = 'out';
+        if(scene.servingSlot === o) scene.servingSlot = null;
+      }
     } else if(o.state==='out'){
       o.x += speed*1.15;
       if(o.x > scene.W + 30){ scene.active.splice(i,1); continue; }
@@ -1382,11 +1518,14 @@ function evaluateCustomer(c){
   const anyBadTaste = options.some(o=>o.stockOK && o.taste==='bad');
   const anyPriceFail = options.some(o=>o.stockOK && !o.priceOK);
   if(anyBadTaste && (!anyPriceFail || Math.random()<0.5)){
-    game.dayStats.missedTaste++;
+    const m = dominantMismatch(game.recipe, c);
+    if(m.attr==='strength') game.dayStats.missedStrength++;
+    else if(m.attr==='milk') game.dayStats.missedMilk++;
+    else game.dayStats.missedSugar++;
     game.loyalty = clamp(game.loyalty - 0.15, 0, 100);
     game.dayStats.loyaltyFromMisses -= 0.15;
     const line = specificTasteLine(game.recipe, c, 'bad');
-    const result = {outcome:'declined', reason:'taste', line, segment:c.segment};
+    const result = {outcome:'declined', reason:m.attr, line, segment:c.segment};
     maybeBuzz(result, c);
     return result;
   }
@@ -1421,7 +1560,7 @@ function logMini(result){
 
 function updateTrio(){
   $('triBought').textContent = game.dayStats.sold;
-  $('triDeclined').textContent = game.dayStats.missedPrice + game.dayStats.missedTaste;
+  $('triDeclined').textContent = game.dayStats.missedPrice + game.dayStats.missedStrength + game.dayStats.missedMilk + game.dayStats.missedSugar;
   $('triNoStock').textContent = game.dayStats.missedStock;
 }
 
@@ -1450,10 +1589,11 @@ function endService(){
   const spoil = overnightSpoilage();
   game.history.push({
     day: game.day, dayName: game.dayName, isWeekend: game.isWeekend,
-    profit: game.dayStats.revenue - game.dayStats.cogs,
+    profit: game.dayStats.revenue - game.dayStats.cogs - PITCH_FEE,
     revenue: game.dayStats.revenue, cogs: game.dayStats.cogs,
     loyalty: game.loyalty, sold: game.dayStats.sold,
-    missedStock: game.dayStats.missedStock, missedPrice: game.dayStats.missedPrice, missedTaste: game.dayStats.missedTaste,
+    missedStock: game.dayStats.missedStock, missedPrice: game.dayStats.missedPrice,
+    missedStrength: game.dayStats.missedStrength, missedMilk: game.dayStats.missedMilk, missedSugar: game.dayStats.missedSugar,
   });
   showDebrief(spoil);
 }
@@ -1490,11 +1630,13 @@ function overnightSpoilage(){
 function svgOutcomesBar(ds){
   const bars = [
     {label:'Sold', value:ds.sold, color:'#8fa888'},
-    {label:'Price', value:ds.missedPrice, color:'#e3a868'},
-    {label:'Taste', value:ds.missedTaste, color:'#d1594a'},
     {label:'Stock', value:ds.missedStock, color:'#6a5a48'},
+    {label:'Price', value:ds.missedPrice, color:'#e3a868'},
+    {label:'Strength', value:ds.missedStrength, color:'#d1594a'},
+    {label:'Milk', value:ds.missedMilk, color:'#6a8fb0'},
+    {label:'Sugar', value:ds.missedSugar, color:'#c97dbf'},
   ];
-  const w=520,h=130, padB=20, padT=10, barGap=18;
+  const w=520,h=130, padB=20, padT=10, barGap=10;
   const max = Math.max(1, ...bars.map(b=>b.value));
   const barW = (w - barGap*(bars.length+1)) / bars.length;
   let svg = `<svg viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg">`;
@@ -1503,7 +1645,7 @@ function svgOutcomesBar(ds){
     const x = barGap + i*(barW+barGap);
     const y = h-padB-bh;
     svg += `<rect x="${x}" y="${y}" width="${barW}" height="${bh}" rx="4" fill="${b.color}"/>`;
-    svg += `<text x="${x+barW/2}" y="${h-padB+13}" text-anchor="middle" font-size="10" fill="#cbb99e" font-family="DM Sans, sans-serif">${b.label}</text>`;
+    svg += `<text x="${x+barW/2}" y="${h-padB+13}" text-anchor="middle" font-size="9.5" fill="#cbb99e" font-family="DM Sans, sans-serif">${b.label}</text>`;
     svg += `<text x="${x+barW/2}" y="${y-5}" text-anchor="middle" font-size="11" fill="#f1e4cf" font-family="JetBrains Mono, monospace" font-weight="600">${b.value}</text>`;
   });
   svg += `</svg>`;
@@ -1573,7 +1715,7 @@ function buildInsight(ds){
 }
 
 function dayRating(ds){
-  const total = ds.sold + ds.missedPrice + ds.missedTaste + ds.missedStock;
+  const total = ds.sold + ds.missedPrice + ds.missedStrength + ds.missedMilk + ds.missedSugar + ds.missedStock;
   const rate = total>0 ? ds.sold/total : 0;
   if(rate >= 0.75) return {label:'Outstanding', cls:'r4'};
   if(rate >= 0.55) return {label:'Great', cls:'r3'};
@@ -1663,24 +1805,32 @@ function showDebrief(spoil){
     <div class="debrief-item"><div class="dl">Cups sold</div><div class="dv">${ds.sold}${game.secondRecipeUnlocked ? ` <span style="font-size:11px;color:var(--cream-dim);">(${ds.sold1}/${ds.sold2})</span>` : ''}</div></div>
     <div class="debrief-item"><div class="dl">Revenue</div><div class="dv gold">${fmt(ds.revenue)}</div></div>
     <div class="debrief-item"><div class="dl">Ingredient cost</div><div class="dv">${fmt(ds.cogs)}</div></div>
-    <div class="debrief-item"><div class="dl">Day profit</div><div class="dv ${profit>=0?'pos':'neg'}">${profit>=0?'+':''}${fmt(profit)}</div></div>
-    <div class="debrief-item"><div class="dl">Missed sales</div><div class="dv neg">${ds.missedStock+ds.missedPrice+ds.missedTaste}</div></div>
+    <div class="debrief-item"><div class="dl">Pitch fee</div><div class="dv neg">−${fmt(PITCH_FEE)}</div></div>
+    <div class="debrief-item"><div class="dl">Day profit (after fee)</div><div class="dv ${(profit-PITCH_FEE)>=0?'pos':'neg'}">${(profit-PITCH_FEE)>=0?'+':''}${fmt(profit-PITCH_FEE)}</div></div>
+    <div class="debrief-item"><div class="dl">Missed sales</div><div class="dv neg">${ds.missedStock+ds.missedPrice+ds.missedStrength+ds.missedMilk+ds.missedSugar}</div></div>
+    <div class="debrief-item"><div class="dl">— by reason</div><div class="dv" style="font-size:11px; color:var(--cream-dim); line-height:1.5;">Stock ${ds.missedStock} · Price ${ds.missedPrice}<br>Strength ${ds.missedStrength} · Milk ${ds.missedMilk} · Sugar ${ds.missedSugar}</div></div>
     <div class="debrief-item"><div class="dl">Loyalty change</div><div class="dv ${loyaltyDelta>=0?'pos':'neg'}">${loyaltyDelta>=0?'+':''}${loyaltyDelta.toFixed(1)}</div></div>
   `;
 
   $('insightBox').innerHTML = `<div class="event-note tip"><div class="ei">💡</div><div>${buildInsight(ds)}</div></div>` +
-    `<div class="event-note"><div class="ei">🧮</div><div>Loyalty math: ${ds.loyaltyFromSales>=0?'+':''}${ds.loyaltyFromSales.toFixed(2)} from sales, ${ds.loyaltyFromMisses.toFixed(2)} from misses (${ds.missedStock} no-stock × −0.20, ${ds.missedTaste} taste × −0.15, ${ds.missedPrice} price × −0.15) = ${loyaltyDelta>=0?'+':''}${loyaltyDelta.toFixed(2)} net.</div></div>`;
+    `<div class="event-note"><div class="ei">🧮</div><div>Loyalty math: ${ds.loyaltyFromSales>=0?'+':''}${ds.loyaltyFromSales.toFixed(2)} from sales, ${ds.loyaltyFromMisses.toFixed(2)} from misses (${ds.missedStock} no-stock × −0.20, ${ds.missedStrength+ds.missedMilk+ds.missedSugar} taste × −0.15, ${ds.missedPrice} price × −0.15) = ${loyaltyDelta>=0?'+':''}${loyaltyDelta.toFixed(2)} net.</div></div>`;
 
   renderCharts();
   renderBuzz();
 
   let events = '';
+  const rm = ds.rushMishap;
+  if(rm && rm.triggered){
+    events += `<div class="event-note warn"><div class="ei">🌪️</div><div>Rush chaos! ${rm.actualCount} customers today (${Math.round(rm.chance*100)}% mishap risk) tipped things over — spillage cost you ${rm.coffeeLost}g coffee, ${rm.milkLost}ml milk, ${rm.sugarLost}g sugar before you'd even sold a cup.</div></div>`;
+  } else if(rm && rm.actualCount > 20){
+    events += `<div class="event-note good"><div class="ei">🍀</div><div>${rm.actualCount} customers today (${Math.round(rm.chance*100)}% mishap risk) and you got away with it — no spillage.</div></div>`;
+  }
   if(spoil.milkLost>0) events += `<div class="event-note warn"><div class="ei">🥛</div><div>${spoil.milkLost}ml of milk spoiled overnight${spoil.fridgeEvent ? ' — the fridge glitched too' : ''}.</div></div>`;
   if(spoil.moldEvent) events += `<div class="event-note warn"><div class="ei">🦠</div><div>A batch of coffee turned — lost ${spoil.coffeeLost}g total to mold and staleness.</div></div>`;
   else if(spoil.coffeeLost>0) events += `<div class="event-note"><div class="ei">🌰</div><div>${spoil.coffeeLost}g of coffee lost a little freshness.</div></div>`;
   if(spoil.antsEvent) events += `<div class="event-note warn"><div class="ei">🐜</div><div>Ants got into the sugar overnight — lost ${spoil.sugarLost}g.</div></div>`;
   if(!game.secondRecipeUnlocked && game.loyalty >= UNLOCK_LOYALTY) events += `<div class="event-note good"><div class="ei">🎉</div><div>Loyalty has crossed ${UNLOCK_LOYALTY} — you can unlock a second brew tomorrow morning.</div></div>`;
-  if(game.cash < 2) events += `<div class="event-note warn"><div class="ei">⚠️</div><div>Cash is razor-thin. One bad day could end the run.</div></div>`;
+  if(game.cash < 2) events += `<div class="event-note warn"><div class="ei">⚠️</div><div>Cash is razor-thin. One bad day could end the run — remember tomorrow's pitch fee is ${fmt(PITCH_FEE)} before you even open.</div></div>`;
   $('debriefEvents').innerHTML = events;
 
   $('nextDayBtn').textContent = game.day >= game.durationDays ? 'See Final Results →' : 'Next Day →';
