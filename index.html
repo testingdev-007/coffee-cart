@@ -370,6 +370,7 @@ canvas#sceneCanvas{width:100%; height:auto; display:block; border-radius:10px; b
           <input type="range" min="1.00" max="7.00" step="0.10" value="3.20" id="rPrice">
           <div class="margin-tag" id="marginTag">est. margin: £0.00 / cup</div>
           <div class="market-ref">Typical price nearby today: <b id="marketRef">£0.00</b></div>
+          <div class="market-ref">Estimated able to afford this at your price: <b id="affordRef">0%</b> of today's crowd</div>
         </div>
       </div>
 
@@ -410,6 +411,7 @@ canvas#sceneCanvas{width:100%; height:auto; display:block; border-radius:10px; b
         <div class="makeable-line"><span>Cups you'll be able to make if you buy this order</span><span class="mkv" id="makeableAfter">0</span></div>
         <p class="bottleneck-note" id="bottleneckNote">—</p>
         <p class="bottleneck-note" id="breakEvenNote">—</p>
+        <p class="bottleneck-note" id="overageNote" style="color:var(--red-light);">—</p>
 
         <div style="margin-top:14px; padding-top:14px; border-top:1px dashed var(--line);">
           <div class="buy-row"><div class="bicon">🥤</div><div><div class="bname">Cups</div><div class="bprice" id="p_cup"></div></div><div class="stepper"><button type="button" class="stepBtn" data-target="buy_cup" data-dir="-1" aria-label="Decrease cups">−</button><input type="number" min="0" step="5" id="buy_cup" value="0"><button type="button" class="stepBtn" data-target="buy_cup" data-dir="1" aria-label="Increase cups">+</button></div></div>
@@ -501,6 +503,7 @@ canvas#sceneCanvas{width:100%; height:auto; display:block; border-radius:10px; b
 
       <div class="service-stats">
         <div class="mini-stat"><span class="msl">Revenue today</span><span class="msv" id="liveRevenue">£0.00</span></div>
+        <div class="mini-stat" style="border-color:var(--copper-light);"><span class="msl">Cups makeable now (Brew 1)</span><span class="msv" id="liveMakeable">0</span></div>
         <div class="mini-stat"><span class="msl">Cups left</span><span class="msv" id="liveCupsLeft">0</span></div>
         <div class="mini-stat"><span class="msl">Milk left</span><span class="msv" id="liveMilkLeft">0 ml</span></div>
         <div class="mini-stat"><span class="msl">Coffee left</span><span class="msv" id="liveCoffeeLeft">0 g</span></div>
@@ -584,7 +587,7 @@ const DAY_NAMES = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'
 const WEEKEND_IDX = [5,6];
 const UNLOCK_LOYALTY = 35;
 const UNLOCK_COST = 8.00;
-const BASE_CAPS = { cups:45, lids:45, coffee:260, milk:950, sugar:140 };
+const BASE_CAPS = { cups:50, lids:50, coffee:280, milk:1600, sugar:160 };
 const WEATHER_TYPES = [
   {name:'Crisp & Cold', icon:'❄️', tempRange:[2,11], demandMult:1.05},
   {name:'Mild & Pleasant', icon:'🌤️', tempRange:[12,19], demandMult:1.28},
@@ -706,15 +709,28 @@ function pickSegment(weights){
 function expectedCustomerRange(){
   const w = game.weather;
   const progress = game.day / game.durationDays;
-  const base = 14 + Math.floor(progress * 20);
-  const demandMult = w.demandMult * (game.isWeekend ? 1.35 : 1);
-  const loyaltyFactor = 1 + game.loyalty/220;
-  const mid = base * demandMult * loyaltyFactor;
-  return { lo: Math.max(3, Math.round(mid*0.72)), hi: Math.round(mid*1.28) };
+  // Logistic-style growth: rises quickly early on, then flattens — never explodes.
+  const growthBase = 12 + 14 * (1 - Math.exp(-progress*2.2));
+  const demandMult = w.demandMult * (game.isWeekend ? 1.2 : 1);
+  const loyaltyFactor = 1 + Math.min(game.loyalty,100)/280;
+  let mid = growthBase * demandMult * loyaltyFactor;
+  mid = Math.min(mid, 34); // hard ceiling regardless of how the multipliers stack
+  return { lo: Math.max(3, Math.round(mid*0.75)), hi: Math.min(42, Math.round(mid*1.25)) };
 }
 
 function rushChanceFor(count){
-  return clamp((count-20)/40, 0, 0.6);
+  return clamp((count-18)/34, 0, 0.55);
+}
+
+function estimateAffordability(price){
+  let total = 0;
+  SEGMENTS.forEach(seg=>{
+    const w = (game.dayMix && game.dayMix.weights[seg.key]) || 0;
+    const lo = seg.loMult*game.marketPrice, hi = seg.hiMult*game.marketPrice;
+    const frac = hi>lo ? clamp((hi-price)/(hi-lo),0,1) : (price<=hi?1:0);
+    total += w*frac;
+  });
+  return clamp(total,0,1);
 }
 
 function updateRevenueNote(){
@@ -844,8 +860,9 @@ function renderPrep(){
   $('rushRiskNote').textContent = `Chance of a rush mishap if it gets busy: ~${rushPct}%. Big volume isn't pure upside — a chaotic rush risks spillage that eats into stock before you even notice.`;
   const tempFactor = game.weather.tempC>26 ? 0.18 : game.weather.tempC>20 ? 0.08 : 0;
   const milkLo = Math.round((0.12+tempFactor)*100), milkHi = Math.round((0.12+tempFactor+0.07)*100);
-  $('spoilRiskNote').textContent = `Milk spoilage risk overnight: ~${milkLo}–${milkHi}% of whatever's left unsold (plus a 1-in-10 chance of a fridge mishap adding another 15–30%). Leftover milk is the riskiest thing to over-buy.`;
+  $('spoilRiskNote').textContent = `Milk spoilage risk overnight: ~${milkLo}–${milkHi}% base, rising steeply the fuller your milk storage is (up to +35 points at 100% full). Buying to the cap "just in case" costs real money overnight — match stock to the forecast instead.`;
   $('marketRef').textContent = fmt(game.marketPrice);
+  $('affordRef').textContent = Math.round(estimateAffordability(game.price)*100) + '%';
 
   if(!game.secondRecipeUnlocked && game.loyalty >= UNLOCK_LOYALTY){
     $('unlockBanner').classList.remove('hidden');
@@ -921,6 +938,7 @@ $('rPrice').addEventListener('input', ()=>{
   $('priceDisplayPrep').textContent = fmt(game.price);
   $('marginTag').textContent = marginText(game.price, '1');
   updateRevenueNote();
+  $('affordRef').textContent = Math.round(estimateAffordability(game.price)*100) + '%';
 });
 
 ['rStrength2','rMilk2','rSugar2'].forEach(id=>{
@@ -1016,6 +1034,23 @@ function renderMakeable(){
       beEl.textContent = `Break-even: £${committed.toFixed(2)} committed today ÷ £${margin.toFixed(2)} margin/cup = ${beCups} cups needed to cover it, out of ${valAfter} you'd be able to make.`;
     } else {
       beEl.textContent = `Break-even: at £${game.price.toFixed(2)} your margin is £0 or negative — no number of cups covers this. Raise price or cut cost.`;
+    }
+  }
+
+  const ovEl = $('overageNote');
+  if(ovEl){
+    const caps = getCaps();
+    const milkFullPct = caps.milk>0 ? Math.round(clamp(projected.milk/caps.milk,0,1)*100) : 0;
+    const w = game.weather;
+    const tempFactor = w.tempC>26 ? 0.16 : w.tempC>20 ? 0.07 : 0;
+    const estRisk = Math.round(clamp(0.08+tempFactor+(milkFullPct/100)*0.35, 0, 0.95)*100);
+    const surplus = Math.max(0, valAfter - range.hi);
+    if(milkFullPct > 0){
+      ovEl.textContent = surplus > 0
+        ? `Overage warning: this fills milk storage to ${milkFullPct}%, pushing tonight's milk spoilage risk to ~${estRisk}% — and you'd still be stocked for ${surplus} more cups than the busiest forecast customer count. Buying "to the cap" isn't free.`
+        : `Milk storage would sit at ${milkFullPct}% full — tonight's milk spoilage risk ≈ ${estRisk}%. The fuller you keep it, the more you lose to spoilage, so match stock to the forecast rather than maxing out.`;
+    } else {
+      ovEl.textContent = `No milk in this order yet — overage risk only kicks in once storage starts filling up.`;
     }
   }
 }
@@ -1511,7 +1546,22 @@ function evaluateCustomer(c){
     game.dayStats.missedStock++;
     game.loyalty = clamp(game.loyalty - 0.2, 0, 100);
     game.dayStats.loyaltyFromMisses -= 0.2;
-    const result = {outcome:'no_stock', reason:'stock', line: pick(["No cups left — walked off.","Out of milk — missed sale.","Ran short on stock, sorry!","Sold out of something — turned away."]), segment:c.segment};
+    const cb1 = cupBreakdown(game.recipe);
+    const shortages = [];
+    if(game.stock.cups<1) shortages.push('cups');
+    if(game.stock.lids<1) shortages.push('lids');
+    if(game.stock.coffee<cb1.coffeeGrams) shortages.push('coffee');
+    if(game.stock.milk<cb1.milkMl) shortages.push('milk');
+    if(game.stock.sugar<cb1.sugarGrams) shortages.push('sugar');
+    const shortName = shortages[0] || 'stock';
+    const LINES = {
+      cups: ["No cups left — walked off.","Out of cups, had to turn them away."],
+      lids: ["Out of lids — can't serve without one.","No lids left, sorry."],
+      coffee: [`Only enough coffee for a weaker cup than the recipe calls for — not enough grounds.`,"Ran short on coffee for this recipe."],
+      milk: [`Not enough milk left for a full cup at this recipe.`,"Short on milk for the current recipe."],
+      sugar: ["Not enough sugar left for this recipe.","Ran short on sugar."],
+    };
+    const result = {outcome:'no_stock', reason:'stock', shortIngredient:shortName, line: pick(LINES[shortName] || ["Ran short on stock, sorry!"]), segment:c.segment};
     maybeBuzz(result, c);
     return result;
   }
@@ -1553,7 +1603,7 @@ function logMini(result){
   const div = document.createElement('div');
   const cls = result.outcome==='sale' ? (result.taste==='perfect'?'good':'') : 'bad';
   div.className = cls;
-  const tag = result.outcome==='sale' ? `Sold ${fmt(result.price)}` : (result.outcome==='no_stock' ? 'Turned away (no stock)' : `Declined (${result.reason})`);
+  const tag = result.outcome==='sale' ? `Sold ${fmt(result.price)}` : (result.outcome==='no_stock' ? `Turned away (short on ${result.shortIngredient})` : `Declined (${result.reason})`);
   div.textContent = `${tag} — "${result.line}"`;
   $('miniLog').prepend(div);
 }
@@ -1576,6 +1626,7 @@ function updateCupGauge(sold){
 
 function updateLiveStats(){
   $('liveRevenue').textContent = fmt(game.dayStats.revenue);
+  $('liveMakeable').textContent = computeMakeable(game.stock, game.recipe);
   $('liveCupsLeft').textContent = game.stock.cups;
   $('liveMilkLeft').textContent = game.stock.milk + ' ml';
   $('liveCoffeeLeft').textContent = game.stock.coffee + ' g';
@@ -1600,30 +1651,35 @@ function endService(){
 
 function overnightSpoilage(){
   const w = game.weather;
-  const milkPct = clamp(0.12 + (w.tempC>26?0.18:w.tempC>20?0.08:0) + Math.random()*0.07, 0, 0.95);
+  const caps = getCaps();
+  const milkFullness = caps.milk>0 ? clamp(game.stock.milk/caps.milk, 0, 1) : 0;
+  const coffeeFullness = caps.coffee>0 ? clamp(game.stock.coffee/caps.coffee, 0, 1) : 0;
+  const sugarFullness = caps.sugar>0 ? clamp(game.stock.sugar/caps.sugar, 0, 1) : 0;
+
+  const milkPct = clamp(0.08 + (w.tempC>26?0.16:w.tempC>20?0.07:0) + Math.random()*0.06 + milkFullness*0.35, 0, 0.95);
   let milkLost = Math.floor(game.stock.milk*milkPct);
   let fridgeEvent = false;
-  if(Math.random()<0.10 && game.stock.milk>0){
+  if(Math.random()<(0.08+milkFullness*0.12) && game.stock.milk>0){
     const extra = Math.floor(game.stock.milk*(0.15+Math.random()*0.15));
     milkLost += extra; fridgeEvent = true;
   }
   game.stock.milk = Math.max(0, game.stock.milk - milkLost);
 
-  const coffeeBasePct = 0.015 + Math.random()*0.015;
+  const coffeeBasePct = 0.012 + Math.random()*0.012 + coffeeFullness*0.10;
   let coffeeLost = Math.floor(game.stock.coffee*coffeeBasePct);
   let moldEvent = false;
-  if(Math.random()<0.12 && game.stock.coffee>0){
+  if(Math.random()<(0.08+coffeeFullness*0.14) && game.stock.coffee>0){
     const extra = Math.floor(game.stock.coffee*(0.2+Math.random()*0.25));
     coffeeLost += extra; moldEvent = true;
   }
   game.stock.coffee = Math.max(0, game.stock.coffee - coffeeLost);
 
   let sugarLost = 0, antsEvent = false;
-  if(Math.random()<0.15 && game.stock.sugar>0){
+  if(Math.random()<(0.10+sugarFullness*0.25) && game.stock.sugar>0){
     sugarLost = Math.floor(game.stock.sugar*(0.3+Math.random()*0.4));
     game.stock.sugar -= sugarLost; antsEvent = true;
   }
-  return {milkLost, coffeeLost, sugarLost, fridgeEvent, moldEvent, antsEvent};
+  return {milkLost, coffeeLost, sugarLost, fridgeEvent, moldEvent, antsEvent, milkFullness, coffeeFullness, sugarFullness};
 }
 
 /* ================= CHARTS ================= */
