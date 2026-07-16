@@ -242,6 +242,36 @@ canvas#sceneCanvas{width:100%; height:auto; display:block; border-radius:10px; b
 
 .btn-row{display:flex; gap:10px; margin-top:18px; flex-wrap:wrap;}
 .btn-row > *{flex:1;}
+
+.meta-btn-row{display:flex; gap:10px; margin-top:12px;}
+.meta-btn-row button{flex:1;}
+.meta-btn-row #trophyCountBadge{font-family:var(--font-mono); color:var(--gold); font-size:11px;}
+
+.trophy-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:16px 0;}
+@media(max-width:520px){.trophy-grid{grid-template-columns:1fr;}}
+.trophy-card{background:var(--bg-panel-2); border:1px solid var(--line); border-radius:12px; padding:12px; display:flex; gap:10px; align-items:flex-start;}
+.trophy-card.locked{opacity:0.4; filter:grayscale(1);}
+.trophy-card .tc-icon{font-size:26px; flex-shrink:0;}
+.trophy-card .tc-name{font-weight:700; font-size:13px; color:var(--cream);}
+.trophy-card .tc-desc{font-size:11px; color:var(--cream-dim); margin-top:2px; line-height:1.4;}
+
+.score-row{display:grid; grid-template-columns:28px 1fr auto auto; gap:10px; align-items:center; background:var(--bg-panel-2); border:1px solid var(--line); border-radius:10px; padding:10px 12px; margin-bottom:8px;}
+.score-row .sr-rank{font-family:var(--font-mono); font-weight:700; color:var(--copper-light); text-align:center;}
+.score-row .sr-name{font-size:13px; font-weight:600; color:var(--cream);}
+.score-row .sr-meta{font-size:10.5px; color:var(--cream-dim);}
+.score-row .sr-roi{font-family:var(--font-mono); font-weight:700; font-size:14px;}
+.score-row .sr-roi.pos{color:var(--sage-light);}
+.score-row .sr-roi.neg{color:var(--red-light);}
+.score-empty{font-size:12.5px; color:var(--cream-dim); text-align:center; padding:20px 0;}
+
+#trophyToastLayer{position:fixed; top:16px; left:50%; transform:translateX(-50%); z-index:80; display:flex; flex-direction:column; gap:8px; align-items:center; pointer-events:none;}
+.trophy-toast{
+  background:linear-gradient(180deg, var(--copper-light), var(--copper)); color:#241205; font-weight:700; font-size:13px;
+  padding:10px 18px; border-radius:12px; box-shadow:0 10px 30px -6px rgba(0,0,0,.5); display:flex; align-items:center; gap:8px;
+  animation:trophyIn .4s ease, trophyOut .4s ease 3.1s forwards;
+}
+@keyframes trophyIn{from{opacity:0; transform:translateY(-14px) scale(.9);} to{opacity:1; transform:translateY(0) scale(1);}}
+@keyframes trophyOut{from{opacity:1;} to{opacity:0; transform:translateY(-10px);}}
 ::-webkit-scrollbar{width:8px;}
 ::-webkit-scrollbar-thumb{background:var(--line); border-radius:4px;}
 </style>
@@ -308,10 +338,14 @@ canvas#sceneCanvas{width:100%; height:auto; display:block; border-radius:10px; b
             <div class="cb-sub">Long haul, slower ramp-up</div>
           </button>
         </div>
-        <div class="budget-note">Every run starts with <b>£10.00</b>, minus a <b>£2.00 pitch fee charged every morning</b> before you buy anything — that's a fixed cost regardless of how the day goes. Storage space is fixed too and never grows. Turning some customers away on day one is normal, not a failure. Each day's profit funds the next day's stock and fee.</div>
+        <div class="budget-note">Every run starts with <b>£15.00</b>, minus a <b>£3.00 pitch fee charged every morning</b> before you buy anything — that's a fixed cost regardless of how the day goes. Storage space is fixed too and never grows, and buying to the max costs you more in overnight spoilage than it earns — matching your stock to the forecast beats maxing out. Turning some customers away on day one is normal, not a failure. Each day's profit funds the next day's stock and fee.</div>
       </div>
 
       <button id="startGameBtn" class="primary-btn" disabled>Pick a run length to begin</button>
+      <div class="meta-btn-row">
+        <button id="openTrophiesBtn" class="secondary-btn" type="button">🏆 Trophies <span id="trophyCountBadge">0/0</span></button>
+        <button id="openScoreboardBtn" class="secondary-btn" type="button">📊 Scoreboard</button>
+      </div>
     </div>
   </div>
 
@@ -371,6 +405,7 @@ canvas#sceneCanvas{width:100%; height:auto; display:block; border-radius:10px; b
           <div class="margin-tag" id="marginTag">est. margin: £0.00 / cup</div>
           <div class="market-ref">Typical price nearby today: <b id="marketRef">£0.00</b></div>
           <div class="market-ref">Estimated able to afford this at your price: <b id="affordRef">0%</b> of today's crowd</div>
+          <p class="cost-caveat" style="text-align:center; margin-top:6px;">Price resets to today's market rate each morning — it's on you to decide whether to charge above or below it.</p>
         </div>
       </div>
 
@@ -442,7 +477,8 @@ canvas#sceneCanvas{width:100%; height:auto; display:block; border-radius:10px; b
       </div>
     </div>
 
-    <button id="openCartBtn" class="primary-btn" style="margin-top:16px;">Open the Cart →</button>
+    <p style="text-align:center; font-size:11.5px; color:var(--cream-dim); margin:10px 0 0;">Anything still sitting in your order (Order tab) is bought automatically the moment you open the cart.</p>
+    <button id="openCartBtn" class="primary-btn" style="margin-top:8px;">Open the Cart →</button>
   </div>
 
   <!-- SERVICE -->
@@ -564,20 +600,47 @@ canvas#sceneCanvas{width:100%; height:auto; display:block; border-radius:10px; b
     <div class="go-title" id="goTitle">Certified Bean Baron</div>
     <div class="go-sub" id="goSub">—</div>
     <div class="debrief-grid" id="goGrid"></div>
+    <div id="goNewTrophies"></div>
+    <div class="btn-row">
+      <button id="goTrophiesBtn" class="secondary-btn" type="button">🏆 Trophies</button>
+      <button id="goScoreboardBtn" class="secondary-btn" type="button">📊 Scoreboard</button>
+    </div>
     <div class="btn-row">
       <button id="restartBtn" class="primary-btn">Run It Back</button>
     </div>
   </div>
 </div>
 
+<!-- TROPHIES MODAL -->
+<div id="trophiesModal" class="modal-overlay hidden">
+  <div class="modal-card">
+    <h2 class="modal-title">🏆 Trophies <span class="day-rating r3" id="trophyModalCount">0/0</span></h2>
+    <p class="modal-sub">Unlocked by playing — resets if you refresh the page, carries over across "Run It Back" in this session.</p>
+    <div class="trophy-grid" id="trophyGrid"></div>
+    <div class="btn-row"><button id="closeTrophiesBtn" class="primary-btn">Close</button></div>
+  </div>
+</div>
+
+<!-- SCOREBOARD MODAL -->
+<div id="scoreboardModal" class="modal-overlay hidden">
+  <div class="modal-card">
+    <h2 class="modal-title">📊 Scoreboard</h2>
+    <p class="modal-sub">Your runs this session, best first — resets if you refresh the page.</p>
+    <div id="scoreboardList"></div>
+    <div class="btn-row"><button id="closeScoreboardBtn" class="primary-btn">Close</button></div>
+  </div>
+</div>
+
+<div id="trophyToastLayer"></div>
+
 <script>
 (function(){
 "use strict";
 
 /* ================= CONFIG ================= */
-const STARTING_CASH = 10.00;
-const PITCH_FEE = 2.00;
-const ING_BASE = { cup:0.06, lid:0.05, coffee:0.032, milk:0.008, sugar:0.010 };
+const STARTING_CASH = 15.00;
+const PITCH_FEE = 3.00;
+const ING_BASE = { cup:0.05, lid:0.04, coffee:0.035, milk:0.010, sugar:0.012 };
 const CUP_ML = 200;
 const BREW_RATIO = {1:0.045, 2:0.06, 3:0.075, 4:0.09, 5:0.11};
 const STRENGTH_LABEL = {1:'Weak',2:'Light',3:'Balanced',4:'Bold',5:'Rocket Fuel'};
@@ -626,6 +689,88 @@ let chosenDays = null;
 let scene = null;
 let animHandle = null;
 let fastForward = false;
+
+/* ---- session meta: trophies + scoreboard. Plain in-memory JS state only —
+   deliberately NOT persisted to any storage, so a page refresh wipes it clean.
+   Survives clicking "Run It Back" within the same browser tab/session. ---- */
+let session = {
+  runs: [],
+  trophies: {},
+};
+
+const TROPHIES = [
+  {id:'first_sale', icon:'☕', name:'First Sale', desc:'Sell your first cup, ever.'},
+  {id:'finish_run', icon:'🏁', name:'Finish the Run', desc:'Complete a full run without going bankrupt.'},
+  {id:'marathon', icon:'🗓️', name:'Marathon', desc:'Complete a full 14-day run.'},
+  {id:'s_grade', icon:'🏆', name:'Certified Bean Baron', desc:'Earn an S grade at the end of a run.'},
+  {id:'two_brews', icon:'🥈', name:'Double Menu', desc:'Unlock the second brew.'},
+  {id:'century', icon:'💯', name:'Century Club', desc:'Sell 100+ cups across a single run.'},
+  {id:'beloved', icon:'❤️', name:'Beloved', desc:'Reach 80+ loyalty in a run.'},
+  {id:'outstanding_day', icon:'✨', name:'Outstanding Day', desc:'Post an "Outstanding" day rating.'},
+  {id:'weathered_storm', icon:'🌪️', name:'Weathered the Storm', desc:'Survive a rush mishap and still post a Good day or better.'},
+  {id:'zero_waste', icon:'🧊', name:'Zero Waste', desc:'Finish a day with no spoilage, no mold, no ants, no fridge mishap.'},
+  {id:'gone_viral', icon:'📱', name:'Gone Viral', desc:'Get a viral post in the social buzz feed.'},
+  {id:'learn_by_failing', icon:'💀', name:'Learn by Failing', desc:'Go bankrupt at least once.'},
+  {id:'regular', icon:'🔁', name:'Regular', desc:'Play 3 runs in one session.'},
+];
+
+let trophyToastQueue = [];
+let trophyToastShowing = false;
+
+function unlockTrophy(id){
+  if(session.trophies[id]) return;
+  session.trophies[id] = true;
+  const t = TROPHIES.find(x=>x.id===id);
+  if(t){ trophyToastQueue.push(t); processTrophyToastQueue(); }
+  const badge = $('trophyCountBadge');
+  if(badge) badge.textContent = `${Object.keys(session.trophies).length}/${TROPHIES.length}`;
+}
+
+function processTrophyToastQueue(){
+  if(trophyToastShowing || trophyToastQueue.length===0) return;
+  trophyToastShowing = true;
+  const t = trophyToastQueue.shift();
+  const el = document.createElement('div');
+  el.className = 'trophy-toast';
+  el.innerHTML = `<span style="font-size:18px;">${t.icon}</span><span>Trophy unlocked: ${t.name}</span>`;
+  $('trophyToastLayer').appendChild(el);
+  setTimeout(()=>{ el.remove(); trophyToastShowing=false; processTrophyToastQueue(); }, 3500);
+}
+
+function renderTrophyModal(){
+  const unlockedCount = Object.keys(session.trophies).length;
+  $('trophyModalCount').textContent = `${unlockedCount}/${TROPHIES.length}`;
+  $('trophyGrid').innerHTML = TROPHIES.map(t=>{
+    const unlocked = !!session.trophies[t.id];
+    return `<div class="trophy-card ${unlocked?'':'locked'}">
+      <div class="tc-icon">${unlocked ? t.icon : '🔒'}</div>
+      <div><div class="tc-name">${t.name}</div><div class="tc-desc">${t.desc}</div></div>
+    </div>`;
+  }).join('');
+}
+
+function renderScoreboard(){
+  const list = $('scoreboardList');
+  if(session.runs.length===0){
+    list.innerHTML = `<p class="score-empty">No runs yet this session — finish a run to appear here.</p>`;
+    return;
+  }
+  const sorted = session.runs.slice().sort((a,b)=>b.roi-a.roi);
+  list.innerHTML = sorted.map((r,i)=>{
+    return `<div class="score-row">
+      <div class="sr-rank">#${i+1}</div>
+      <div><div class="sr-name">${r.cartName} <span style="color:var(--cream-dim); font-weight:400;">— ${r.grade} · ${r.title}</span></div><div class="sr-meta">${r.days}-day run · ${r.sold} cups sold · loyalty ${r.loyalty}${r.bankrupt?' · bankrupt':''}</div></div>
+      <div class="sr-roi ${r.roi>=0?'pos':'neg'}">${r.roi>=0?'+':''}${r.roi.toFixed(0)}%</div>
+    </div>`;
+  }).join('');
+}
+
+$('openTrophiesBtn').addEventListener('click', ()=>{ renderTrophyModal(); $('trophiesModal').classList.remove('hidden'); });
+$('closeTrophiesBtn').addEventListener('click', ()=> $('trophiesModal').classList.add('hidden'));
+$('goTrophiesBtn').addEventListener('click', ()=>{ renderTrophyModal(); $('trophiesModal').classList.remove('hidden'); });
+$('openScoreboardBtn').addEventListener('click', ()=>{ renderScoreboard(); $('scoreboardModal').classList.remove('hidden'); });
+$('closeScoreboardBtn').addEventListener('click', ()=> $('scoreboardModal').classList.add('hidden'));
+$('goScoreboardBtn').addEventListener('click', ()=>{ renderScoreboard(); $('scoreboardModal').classList.remove('hidden'); });
 
 /* ================= HELPERS ================= */
 function $(id){ return document.getElementById(id); }
@@ -808,6 +953,8 @@ function beginDay(){
   game.weather = rollWeather();
   game.dayMix = rollDayMix();
   game.marketPrice = +(3.0 + Math.random()*1.3).toFixed(2);
+  game.price = game.marketPrice;
+  if(game.secondRecipeUnlocked) game.price2 = game.marketPrice;
 
   game.prevRates = game.rates;
   game.rates = {
@@ -860,7 +1007,7 @@ function renderPrep(){
   $('rushRiskNote').textContent = `Chance of a rush mishap if it gets busy: ~${rushPct}%. Big volume isn't pure upside — a chaotic rush risks spillage that eats into stock before you even notice.`;
   const tempFactor = game.weather.tempC>26 ? 0.18 : game.weather.tempC>20 ? 0.08 : 0;
   const milkLo = Math.round((0.12+tempFactor)*100), milkHi = Math.round((0.12+tempFactor+0.07)*100);
-  $('spoilRiskNote').textContent = `Milk spoilage risk overnight: ~${milkLo}–${milkHi}% base, rising steeply the fuller your milk storage is (up to +35 points at 100% full). Buying to the cap "just in case" costs real money overnight — match stock to the forecast instead.`;
+  $('spoilRiskNote').textContent = `Milk spoilage risk overnight: ~${milkLo}–${milkHi}% base, rising steeply the fuller your milk storage is (up to +45 points at 100% full). Buying to the cap "just in case" costs real money overnight — match stock to the forecast instead.`;
   $('marketRef').textContent = fmt(game.marketPrice);
   $('affordRef').textContent = Math.round(estimateAffordability(game.price)*100) + '%';
 
@@ -962,6 +1109,7 @@ $('unlockBtn').addEventListener('click', ()=>{
   if(game.cash < UNLOCK_COST) return;
   game.cash -= UNLOCK_COST;
   game.secondRecipeUnlocked = true;
+  unlockTrophy('two_brews');
   renderTopbar();
   renderPrep();
 });
@@ -1043,7 +1191,7 @@ function renderMakeable(){
     const milkFullPct = caps.milk>0 ? Math.round(clamp(projected.milk/caps.milk,0,1)*100) : 0;
     const w = game.weather;
     const tempFactor = w.tempC>26 ? 0.16 : w.tempC>20 ? 0.07 : 0;
-    const estRisk = Math.round(clamp(0.08+tempFactor+(milkFullPct/100)*0.35, 0, 0.95)*100);
+    const estRisk = Math.round(clamp(0.08+tempFactor+(milkFullPct/100)*0.45, 0, 0.96)*100);
     const surplus = Math.max(0, valAfter - range.hi);
     if(milkFullPct > 0){
       ovEl.textContent = surplus > 0
@@ -1144,10 +1292,11 @@ document.querySelectorAll('.stepBtn').forEach(btn=>{
   ['mouseup','mouseleave','touchend','touchcancel'].forEach(ev=>btn.addEventListener(ev, stop));
 });
 
-$('buyBtn').addEventListener('click', ()=>{
+function commitPendingOrder(){
   const {q, total} = updateBuyTotal();
-  if(total<=0) return;
-  if(total > game.cash + 1e-9){ flashShake($('buyBtn')); return; }
+  if(total<=0) return {bought:false, total:0};
+  if(total > game.cash + 1e-9){ flashShake($('buyBtn')); return {bought:false, total:0}; }
+
   game.cash -= total;
   game.totals.spentOnStock += total;
   game.dayStats.spentToday += total;
@@ -1174,6 +1323,11 @@ $('buyBtn').addEventListener('click', ()=>{
   $('marginTag').textContent = marginText(game.price, '1');
   if(game.secondRecipeUnlocked) $('marginTag2').textContent = marginText(game.price2, '2');
   renderTopbar();
+  return {bought:true, total};
+}
+
+$('buyBtn').addEventListener('click', ()=>{
+  commitPendingOrder();
 });
 
 function flashShake(el){
@@ -1192,6 +1346,7 @@ function isBankrupt(){
 
 /* ================= OPEN CART / SERVICE ================= */
 $('openCartBtn').addEventListener('click', ()=>{
+  commitPendingOrder();
   if(game.stock.cups<1 || game.stock.lids<1){
     if(!confirm("You have little to no cups/lids in stock — you'll turn away most customers. Open anyway?")) return;
   }
@@ -1489,10 +1644,10 @@ function evalOption(c, key){
   const stockOK = game.stock.cups>=1 && game.stock.lids>=1 && game.stock.coffee>=cb.coffeeGrams && game.stock.milk>=cb.milkMl && game.stock.sugar>=cb.sugarGrams;
 
   const totalDiff = Math.abs(r.strength-c.prefStrength) + Math.abs(r.milk-c.prefMilk) + Math.abs(r.sugar-c.prefSugar);
-  const tolerance = 1 + game.loyalty/45;
+  const tolerance = 1 + game.loyalty/130;
   let taste;
   if(totalDiff<=tolerance) taste='perfect';
-  else if(totalDiff<=tolerance+2.5) taste='ok';
+  else if(totalDiff<=tolerance+2.0) taste='ok';
   else taste='bad';
 
   const loyaltyFactor = 1 + game.loyalty/400;
@@ -1500,7 +1655,7 @@ function evalOption(c, key){
   const tasteFactor = taste==='perfect' ? 1.15 : taste==='ok' ? 1.0 : 0.85;
   const priceTolerance = c.maxPrice * loyaltyFactor * weekendFactor * tasteFactor;
   const priceOK = price <= priceTolerance*1.1;
-  const tasteWalksAnyway = taste==='bad' && Math.random()<0.6;
+  const tasteWalksAnyway = taste==='bad' ? Math.random()<0.80 : (taste==='ok' ? Math.random()<0.25 : false);
 
   const passes = stockOK && priceOK && !tasteWalksAnyway;
   const score = (taste==='perfect'?2:taste==='ok'?1:0) - price*0.02;
@@ -1525,6 +1680,8 @@ function evaluateCustomer(c){
     if(chosen.key==='2'){ game.dayStats.sold2++; game.dayStats.revenue2 += chosen.price; }
     else { game.dayStats.sold1++; game.dayStats.revenue1 += chosen.price; }
     game.totals.sold++; game.totals.revenue += chosen.price; game.totals.cogs += cpc;
+    unlockTrophy('first_sale');
+    if(game.totals.sold >= 100) unlockTrophy('century');
 
     let line = specificTasteLine(chosen.r, c, chosen.taste);
     let dl = 0;
@@ -1565,9 +1722,8 @@ function evaluateCustomer(c){
     maybeBuzz(result, c);
     return result;
   }
-  const anyBadTaste = options.some(o=>o.stockOK && o.taste==='bad');
-  const anyPriceFail = options.some(o=>o.stockOK && !o.priceOK);
-  if(anyBadTaste && (!anyPriceFail || Math.random()<0.5)){
+  const anyPriceOK = options.some(o=>o.stockOK && o.priceOK);
+  if(anyPriceOK){
     const m = dominantMismatch(game.recipe, c);
     if(m.attr==='strength') game.dayStats.missedStrength++;
     else if(m.attr==='milk') game.dayStats.missedMilk++;
@@ -1656,7 +1812,7 @@ function overnightSpoilage(){
   const coffeeFullness = caps.coffee>0 ? clamp(game.stock.coffee/caps.coffee, 0, 1) : 0;
   const sugarFullness = caps.sugar>0 ? clamp(game.stock.sugar/caps.sugar, 0, 1) : 0;
 
-  const milkPct = clamp(0.08 + (w.tempC>26?0.16:w.tempC>20?0.07:0) + Math.random()*0.06 + milkFullness*0.35, 0, 0.95);
+  const milkPct = clamp(0.08 + (w.tempC>26?0.16:w.tempC>20?0.07:0) + Math.random()*0.06 + milkFullness*0.45, 0, 0.96);
   let milkLost = Math.floor(game.stock.milk*milkPct);
   let fridgeEvent = false;
   if(Math.random()<(0.08+milkFullness*0.12) && game.stock.milk>0){
@@ -1665,7 +1821,7 @@ function overnightSpoilage(){
   }
   game.stock.milk = Math.max(0, game.stock.milk - milkLost);
 
-  const coffeeBasePct = 0.012 + Math.random()*0.012 + coffeeFullness*0.10;
+  const coffeeBasePct = 0.012 + Math.random()*0.012 + coffeeFullness*0.16;
   let coffeeLost = Math.floor(game.stock.coffee*coffeeBasePct);
   let moldEvent = false;
   if(Math.random()<(0.08+coffeeFullness*0.14) && game.stock.coffee>0){
@@ -1675,7 +1831,7 @@ function overnightSpoilage(){
   game.stock.coffee = Math.max(0, game.stock.coffee - coffeeLost);
 
   let sugarLost = 0, antsEvent = false;
-  if(Math.random()<(0.10+sugarFullness*0.25) && game.stock.sugar>0){
+  if(Math.random()<(0.10+sugarFullness*0.30) && game.stock.sugar>0){
     sugarLost = Math.floor(game.stock.sugar*(0.3+Math.random()*0.4));
     game.stock.sugar -= sugarLost; antsEvent = true;
   }
@@ -1832,6 +1988,7 @@ function buildBuzzPosts(){
 function renderBuzz(){
   const posts = buildBuzzPosts();
   if(posts.length===0){ $('buzzSection').innerHTML = ''; return; }
+  if(posts.some(p=>p.viral)) unlockTrophy('gone_viral');
   let html = `<div class="buzz-title">📱 Today's Buzz</div>`;
   posts.forEach(p=>{
     html += `<div class="buzz-post ${p.viral?'viral':''}">
@@ -1851,6 +2008,13 @@ function showDebrief(spoil){
   const profit = ds.revenue - ds.cogs;
   const loyaltyDelta = game.loyalty - ds.loyaltyStart;
   const rating = dayRating(ds);
+
+  if(game.loyalty >= 80) unlockTrophy('beloved');
+  if(rating.label === 'Outstanding') unlockTrophy('outstanding_day');
+  const noSpoilage = spoil.milkLost===0 && spoil.coffeeLost===0 && spoil.sugarLost===0 && !spoil.fridgeEvent && !spoil.moldEvent && !spoil.antsEvent;
+  if(noSpoilage) unlockTrophy('zero_waste');
+  const rm = ds.rushMishap;
+  if(rm && rm.triggered && (rating.cls==='r2'||rating.cls==='r3'||rating.cls==='r4')) unlockTrophy('weathered_storm');
 
   $('debriefDayNum').textContent = game.day;
   $('dayRating').textContent = rating.label;
@@ -1875,7 +2039,6 @@ function showDebrief(spoil){
   renderBuzz();
 
   let events = '';
-  const rm = ds.rushMishap;
   if(rm && rm.triggered){
     events += `<div class="event-note warn"><div class="ei">🌪️</div><div>Rush chaos! ${rm.actualCount} customers today (${Math.round(rm.chance*100)}% mishap risk) tipped things over — spillage cost you ${rm.coffeeLost}g coffee, ${rm.milkLost}ml milk, ${rm.sugarLost}g sugar before you'd even sold a cup.</div></div>`;
   } else if(rm && rm.actualCount > 20){
@@ -1906,12 +2069,26 @@ function showGameOver(bankrupt){
   const roi = STARTING_CASH>0 ? (netProfit/STARTING_CASH)*100 : 0;
   let grade, title;
   if(bankrupt){ grade='F'; title='Bankrupt Barista'; }
-  else if(roi>=120 && game.loyalty>=60){ grade='S'; title='Certified Bean Baron'; }
-  else if(roi>=70){ grade='A'; title='Espresso Mogul'; }
-  else if(roi>=30){ grade='B'; title='Steady Steeper'; }
-  else if(roi>=0){ grade='C'; title='Broke Even, Barely'; }
+  else if(roi>=1500 && game.loyalty>=50){ grade='S'; title='Certified Bean Baron'; }
+  else if(roi>=900){ grade='A'; title='Espresso Mogul'; }
+  else if(roi>=400){ grade='B'; title='Steady Steeper'; }
+  else if(roi>=100){ grade='C'; title='Broke Even, Barely'; }
   else if(roi>=-30){ grade='D'; title='Grounds for Concern'; }
   else { grade='F'; title='Bankrupt Barista'; }
+
+  const trophiesBefore = new Set(Object.keys(session.trophies));
+  if(bankrupt) unlockTrophy('learn_by_failing');
+  else {
+    unlockTrophy('finish_run');
+    if(game.durationDays >= 14) unlockTrophy('marathon');
+    if(grade==='S') unlockTrophy('s_grade');
+  }
+  session.runs.push({
+    cartName: game.cartName, days: game.durationDays, grade, title,
+    roi, sold: t.sold, loyalty: Math.round(game.loyalty), bankrupt,
+  });
+  if(session.runs.length >= 3) unlockTrophy('regular');
+  const newlyUnlocked = TROPHIES.filter(tr => session.trophies[tr.id] && !trophiesBefore.has(tr.id));
 
   $('goGrade').textContent = grade;
   $('goTitle').textContent = title;
@@ -1926,6 +2103,9 @@ function showGameOver(bankrupt){
     <div class="debrief-item"><div class="dl">ROI</div><div class="dv ${roi>=0?'pos':'neg'}">${roi.toFixed(0)}%</div></div>
     <div class="debrief-item"><div class="dl">Final loyalty</div><div class="dv">${Math.round(game.loyalty)}/100</div></div>
   `;
+  $('goNewTrophies').innerHTML = newlyUnlocked.length
+    ? `<div class="event-note good"><div class="ei">🏆</div><div>New this run: ${newlyUnlocked.map(t=>`${t.icon} ${t.name}`).join(', ')}</div></div>`
+    : '';
   $('debriefModal').classList.add('hidden');
   $('gameoverModal').classList.remove('hidden');
 }
@@ -1940,6 +2120,8 @@ $('restartBtn').addEventListener('click', ()=>{
   chosenDays = null;
   $('screen-setup').classList.remove('hidden');
 });
+
+$('trophyCountBadge').textContent = `0/${TROPHIES.length}`;
 
 })();
 </script>
